@@ -41,6 +41,7 @@ const TTS_OUTPUT_FORMATS = [
 
 const defaultProfileSettings = {
   profileName: "Profile 1",
+  theme: "light",
   sttEndpoint: "https://japaneast.stt.speech.microsoft.com",
   speechKey: "",
   sttLocale: "ja-JP",
@@ -142,7 +143,6 @@ let appState = {
   historyOpen: true,
   logOpen: true,
   historyPage: 1,
-  theme: "light",
   performanceView: "total",
 };
 
@@ -167,7 +167,6 @@ boot();
 async function boot() {
   loadProfiles();
   loadUiState();
-  applyTheme();
   renderStaticOptions();
   hydrateProfile();
   wireEvents();
@@ -234,10 +233,18 @@ function renderStaticOptions() {
 function loadProfiles() {
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+    const savedUiState = JSON.parse(localStorage.getItem(UI_KEY) || "null");
+    const legacyTheme = typeof savedUiState?.theme === "string" ? savedUiState.theme : null;
     if (saved?.profiles?.profileA && saved?.profiles?.profileB) {
       appState.activeProfileId = saved.activeProfileId || "profileA";
       appState.profiles.profileA = { ...defaultProfiles.profiles.profileA, ...saved.profiles.profileA };
       appState.profiles.profileB = { ...defaultProfiles.profiles.profileB, ...saved.profiles.profileB };
+      if (!appState.profiles.profileA.theme && legacyTheme) {
+        appState.profiles.profileA.theme = legacyTheme;
+      }
+      if (!appState.profiles.profileB.theme) {
+        appState.profiles.profileB.theme = defaultProfiles.profiles.profileB.theme;
+      }
     }
   } catch {
     appState.activeProfileId = defaultProfiles.activeProfileId;
@@ -261,19 +268,15 @@ function loadUiState() {
     if (typeof saved?.logOpen === "boolean") {
       appState.logOpen = saved.logOpen;
     }
-    if (typeof saved?.theme === "string") {
-      appState.theme = saved.theme;
-    }
   } catch {
     appState.settingsOpen = false;
     appState.historyOpen = true;
     appState.logOpen = true;
-    appState.theme = "light";
   }
 }
 
 function saveUiState() {
-  localStorage.setItem(UI_KEY, JSON.stringify({ settingsOpen: appState.settingsOpen, historyOpen: appState.historyOpen, logOpen: appState.logOpen, theme: appState.theme }));
+  localStorage.setItem(UI_KEY, JSON.stringify({ settingsOpen: appState.settingsOpen, historyOpen: appState.historyOpen, logOpen: appState.logOpen }));
 }
 
 function getActiveProfile() {
@@ -305,7 +308,8 @@ function hydrateProfile() {
   renderVoiceLocaleOptions();
   renderVoiceOptions(profile.ttsLanguage);
   elements.ttsVoice.value = profile.ttsVoice || "";
-  elements.themeSelect.value = appState.theme;
+  elements.themeSelect.value = profile.theme || "light";
+  applyTheme(profile.theme);
   updateConditionalFields();
 }
 
@@ -359,6 +363,7 @@ function collectProfileFromForm() {
   const data = new FormData(elements.settingsForm);
   return {
     profileName: String(elements.profileName.value || "").trim() || "Untitled Profile",
+    theme: String(elements.themeSelect.value || "light").trim() || "light",
     sttEndpoint: sanitizeUrl(data.get("sttEndpoint")),
     speechKey: String(data.get("speechKey") || "").trim(),
     sttLocale: String(data.get("sttLocale") || "").trim(),
@@ -412,9 +417,8 @@ function handleSaveSettings() {
 }
 
 function handleThemeChange() {
-  appState.theme = elements.themeSelect.value || "light";
-  saveUiState();
-  applyTheme();
+  persistActiveProfileDraft();
+  applyTheme(getActiveProfile().theme);
 }
 
 function togglePasswordField(button) {
@@ -481,8 +485,8 @@ function renderLogVisibility() {
   elements.toggleLogBtn.textContent = appState.logOpen ? "Hide" : "Show";
 }
 
-function applyTheme() {
-  document.body.setAttribute("data-theme", appState.theme);
+function applyTheme(themeName = getActiveProfile()?.theme || "light") {
+  document.body.setAttribute("data-theme", themeName);
 }
 
 async function beginRecording() {
