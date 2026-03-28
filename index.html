@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azure AI Voice Flow Tester</title>
+  <link rel="icon" type="image/png" href="./app-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
+</head>
+<body>
+  <button id="open-settings-fab" class="settings-fab" type="button" aria-expanded="false" aria-controls="settings-drawer" aria-label="Open settings">
+    <span class="settings-fab-icon" aria-hidden="true">⚙</span>
+    <span id="settings-fab-profile" class="settings-fab-profile">Profile 1</span>
+  </button>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <div class="hero-main">
+          <div class="hero-text-block">
+            <p class="eyebrow">Speech-to-Text • Translator • Text-to-Speech</p>
+            <h1>Azure AI Voice Flow Tester</h1>
+            <p class="hero-text">
+              Static web app for testing Speech-to-Text, Translator, and Text-to-Speech with custom endpoints.
+              History stays in the browser so recordings and transcripts can be reviewed any time.
+            </p>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <img src="./app-icon.png" alt="" class="hero-icon">
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside id="settings-drawer" class="settings-drawer" aria-hidden="true">
+      <section class="panel settings-panel">
+        <div class="section-head">
+          <h2>Service Settings</h2>
+          <div class="section-actions">
+            <button id="toggle-settings-btn" class="ghost-button" type="button" aria-expanded="false" aria-controls="settings-drawer">Close</button>
+            <button id="save-settings-btn" class="ghost-button" type="button">Save</button>
+          </div>
+        </div>
+
+        <section class="profile-panel">
+          <div class="profile-tabs" role="tablist" aria-label="Configuration profiles">
+            <button id="profile-a-btn" class="profile-tab active" type="button" data-profile-id="profileA">Profile 1</button>
+            <button id="profile-b-btn" class="profile-tab" type="button" data-profile-id="profileB">Profile 2</button>
+          </div>
+          <label>
+            <span>Profile Name</span>
+            <input id="profile-name" name="profileName" type="text" placeholder="My test profile">
+          </label>
+          <label>
+            <span>Skin</span>
+            <select id="theme-select" name="themeSelect">
+              <option value="camo">Battlefield Camo</option>
+              <option value="miku">Miku Style</option>
+              <option value="sakura">Spring Sakura</option>
+              <option value="dark">Dark Eye Care</option>
+              <option value="light">Light Fresh</option>
+            </select>
+          </label>
+          <small class="field-help">Two profiles are stored in this browser. Switch tabs to change or rename each configuration.</small>
+        </section>
+
+        <div id="settings-content" class="settings-content">
+        <form id="settings-form" class="settings-form">
+          <fieldset>
+            <legend>Speech-to-Text</legend>
+            <label>
+              <span>STT Endpoint</span>
+              <input name="sttEndpoint" type="url" placeholder="https://japaneast.stt.speech.microsoft.com">
+            </label>
+            <label>
+              <span>Speech Key</span>
+              <div class="password-field">
+                <input name="speechKey" type="password" placeholder="Azure Speech key">
+                <button class="password-toggle" type="button" data-target="speechKey" aria-label="Show Speech Key">🙈</button>
+              </div>
+            </label>
+            <label>
+              <span>Locale</span>
+              <select name="sttLocale"></select>
+              <small class="field-help">
+                Locale is the speech recognition language locale in BCP-47 format.
+                Examples: <code>ja-JP</code>, <code>en-US</code>, <code>zh-TW</code>.
+              </small>
+            </label>
+            <div class="field-links">
+              <a class="doc-link" href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=stt-tts" target="_blank" rel="noreferrer">Speech locale docs</a>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Translator</legend>
+            <label>
+              <span>Translator Endpoint</span>
+              <input name="translatorEndpoint" type="url" placeholder="https://api.cognitive.microsofttranslator.com/">
+            </label>
+            <label>
+              <span>Translator Key</span>
+              <div class="password-field">
+                <input name="translatorKey" type="password" placeholder="Azure Translator key">
+                <button class="password-toggle" type="button" data-target="translatorKey" aria-label="Show Translator Key">🙈</button>
+              </div>
+            </label>
+            <label>
+              <span>Translator Region</span>
+              <input name="translatorRegion" type="text" placeholder="japaneast">
+            </label>
+            <label class="checkbox">
+              <input name="useCustomTranslator" type="checkbox">
+              <span>Use Custom Translator</span>
+            </label>
+            <label>
+              <span>Category ID</span>
+              <input name="translatorCategory" type="text" placeholder="Custom Translator category">
+            </label>
+            <div class="grid-two">
+              <label>
+                <span>From</span>
+                <select name="translatorFromPreset"></select>
+                <small class="field-help">
+                  Source language code for the spoken audio. Examples: <code>ja</code>, <code>en</code>, <code>zh-Hant</code>.
+                </small>
+              </label>
+              <label>
+                <span>To</span>
+                <select name="translatorToPreset"></select>
+                <small class="field-help">
+                  Target language code for translation. Examples: <code>en</code>, <code>fr</code>, <code>zh-Hant</code>.
+                </small>
+              </label>
+            </div>
+            <div class="grid-two">
+              <label id="translator-from-custom-wrap" class="conditional-field is-hidden">
+                <span>Custom From Code</span>
+                <input name="translatorFromCustom" type="text" placeholder="Enter custom language code">
+              </label>
+              <label id="translator-to-custom-wrap" class="conditional-field is-hidden">
+                <span>Custom To Code</span>
+                <input name="translatorToCustom" type="text" placeholder="Enter custom language code">
+              </label>
+            </div>
+            <div class="field-links">
+              <a class="doc-link" href="https://learn.microsoft.com/en-us/azure/ai-services/translator/reference/v3-0-languages" target="_blank" rel="noreferrer">Translator language docs</a>
+              <a class="doc-link" href="https://learn.microsoft.com/en-us/rest/api/translator/translator/translate?view=rest-translator-v3.0" target="_blank" rel="noreferrer">Translate API docs</a>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Text-to-Speech</legend>
+            <label>
+              <span>TTS Endpoint</span>
+              <input name="ttsEndpoint" type="url" placeholder="https://japaneast.tts.speech.microsoft.com">
+            </label>
+            <label>
+              <span>TTS Key</span>
+              <div class="password-field">
+                <input name="ttsKey" type="password" placeholder="Azure Speech key">
+                <button class="password-toggle" type="button" data-target="ttsKey" aria-label="Show TTS Key">🙈</button>
+              </div>
+            </label>
+            <div class="grid-two">
+              <label>
+                <span>Voice Locale</span>
+                <select name="ttsLanguage"></select>
+                <small class="field-help">
+                  Voice locale in BCP-47 format. Examples: <code>en-US</code>, <code>ja-JP</code>, <code>zh-TW</code>.
+                </small>
+              </label>
+              <label>
+                <span>Voice Name</span>
+                <select id="tts-voice-select" name="ttsVoice"></select>
+                <small class="field-help">
+                  Full Azure voice short name. Examples: <code>en-US-AvaNeural</code>, <code>ja-JP-NanamiNeural</code>, <code>zh-TW-HsiaoChenNeural</code>.
+                </small>
+              </label>
+            </div>
+            <div class="grid-two">
+              <label>
+                <span>Output Format</span>
+                <select name="ttsFormat"></select>
+              </label>
+              <label>
+                <span>Rate</span>
+                <input name="ttsRate" type="text" value="+0%">
+              </label>
+            </div>
+            <div class="section-actions">
+              <button id="load-voices-btn" class="secondary-button" type="button">Load Voices</button>
+            </div>
+            <div class="field-links">
+              <a class="doc-link" href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=stt-tts" target="_blank" rel="noreferrer">Voice and locale docs</a>
+              <a class="doc-link" href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech" target="_blank" rel="noreferrer">TTS REST docs</a>
+            </div>
+          </fieldset>
+        </form>
+        </div>
+      </section>
+      </aside>
+
+      <div id="settings-backdrop" class="settings-backdrop" hidden></div>
+
+      <section class="panel workspace-panel">
+        <div class="section-head">
+          <h2>Live Test</h2>
+          <span id="status-pill" class="status-pill idle">Idle</span>
+        </div>
+
+        <article id="mic-guidance-card" class="mic-guidance mic-guidance-idle">
+          <h3 id="mic-guidance-title">Please enable microphone first</h3>
+          <p id="mic-guidance-text">Click Enable Microphone once before using Hold To Record.</p>
+        </article>
+
+        <section class="perf-strip" aria-label="API performance">
+          <article class="perf-card">
+            <span class="perf-label">STT</span>
+            <strong id="perf-stt">-- ms</strong>
+          </article>
+          <article class="perf-card">
+            <span class="perf-label">Translation</span>
+            <strong id="perf-translation">-- ms</strong>
+          </article>
+          <article class="perf-card">
+            <span class="perf-label">TTS</span>
+            <strong id="perf-tts">-- ms</strong>
+          </article>
+          <article class="perf-card perf-card-total">
+            <span class="perf-label">Total</span>
+            <strong id="perf-total">-- ms</strong>
+          </article>
+        </section>
+
+        <div class="recorder">
+          <div class="mic-access">
+            <button id="enable-mic-btn" class="secondary-button" type="button">Enable Microphone</button>
+            <span id="mic-permission-pill" class="status-pill idle">Mic permission: unknown</span>
+          </div>
+          <button id="record-btn" class="record-button" type="button">
+            <span class="record-button-main">Hold To Record</span>
+            <span class="record-button-sub">Press down to start, release to submit</span>
+          </button>
+          <p class="recorder-hint">Supports mouse, touch, and keyboard. Release the button to trigger STT, translation, and TTS automatically.</p>
+        </div>
+
+        <div class="results">
+          <article class="result-card">
+            <div class="result-head">
+              <h3>Speech-to-Text</h3>
+              <span id="stt-meta" class="meta-tag">Waiting</span>
+            </div>
+            <p id="stt-text" class="result-text empty">Transcript will appear here.</p>
+          </article>
+
+          <article class="result-card">
+            <div class="result-head">
+              <h3>Translation</h3>
+              <span id="translator-meta" class="meta-tag">Waiting</span>
+            </div>
+            <p id="translated-text" class="result-text empty">Translated text will appear here.</p>
+          </article>
+
+          <article class="result-card">
+            <div class="result-head">
+              <h3>TTS Audio</h3>
+              <span id="audio-meta" class="meta-tag">Waiting</span>
+            </div>
+            <audio id="tts-player" controls></audio>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel log-panel">
+        <div class="section-head">
+          <h2>Activity Log</h2>
+          <div class="section-actions">
+            <button id="toggle-log-btn" class="ghost-button" type="button" aria-expanded="true" aria-controls="log-content">Hide</button>
+            <button id="clear-log-btn" class="text-button" type="button">Clear</button>
+          </div>
+        </div>
+        <div id="log-content" class="log-content">
+          <div id="log-output" class="log-output" aria-live="polite"></div>
+          <div class="trend-panel">
+            <div class="result-head trend-head">
+              <h3>Total API Time Trend</h3>
+              <div id="perf-view-switcher" class="view-switcher" role="tablist" aria-label="Performance view">
+                <button class="view-switcher-btn active" type="button" data-view="total">Total</button>
+                <button class="view-switcher-btn" type="button" data-view="stt">STT</button>
+                <button class="view-switcher-btn" type="button" data-view="translation">Translation</button>
+                <button class="view-switcher-btn" type="button" data-view="tts">TTS</button>
+              </div>
+            </div>
+            <svg id="perf-trend-chart" class="trend-chart" viewBox="0 0 640 220" role="img" aria-label="Total API response time trend"></svg>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel history-panel">
+        <div class="section-head">
+          <h2>History</h2>
+          <div class="section-actions">
+            <button id="toggle-history-btn" class="ghost-button" type="button" aria-expanded="true" aria-controls="history-content">Hide</button>
+            <div id="history-pagination-top" class="history-pagination history-pagination-top"></div>
+            <button id="refresh-history-btn" class="ghost-button" type="button">Refresh</button>
+            <button id="clear-history-btn" class="ghost-button danger" type="button">Clear All</button>
+          </div>
+        </div>
+        <div id="history-content" class="history-content">
+          <p class="history-copy">Recordings, transcripts, translations, and a small settings summary are stored in this browser's IndexedDB.</p>
+          <div id="history-list" class="history-list"></div>
+          <div id="history-pagination" class="history-pagination"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="history-item-template">
+    <article class="history-item">
+      <div class="history-top">
+        <div>
+          <h3 class="history-title"></h3>
+          <p class="history-subtitle"></p>
+          <p class="history-time"></p>
+        </div>
+        <button class="text-button history-delete" type="button">Delete</button>
+      </div>
+      <div class="history-grid">
+        <div>
+          <h4>STT</h4>
+          <p class="history-stt"></p>
+        </div>
+        <div>
+          <h4>Translation</h4>
+          <p class="history-translation"></p>
+        </div>
+      </div>
+      <div class="history-meta"></div>
+      <div class="history-performance"></div>
+      <div class="history-api"></div>
+      <div class="history-audio-group">
+        <div>
+          <h4>Recorded Audio</h4>
+          <audio class="history-audio" controls></audio>
+        </div>
+        <div>
+          <h4>TTS Audio</h4>
+          <audio class="history-tts-audio" controls></audio>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>
