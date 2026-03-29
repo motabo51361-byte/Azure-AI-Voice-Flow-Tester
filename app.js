@@ -482,6 +482,7 @@ function applyTheme(themeName = getActiveProfile()?.theme || "light") {
 
 async function beginRecording() {
   if (recorderState.activeRecordingPromise) return;
+  triggerHapticFeedback(12);
   const settings = getSettings();
   const missing = validateBeforeRecording(settings);
   if (missing.length > 0) {
@@ -522,6 +523,7 @@ async function beginRecording() {
 
 async function finishRecording() {
   if (!recorderState.mediaRecorder || recorderState.mediaRecorder.state === "inactive") return;
+  triggerHapticFeedback(16);
   recorderState.isPressing = false;
   recorderState.releaseStartedAt = performance.now();
   setStatus("processing", "Processing");
@@ -1176,6 +1178,16 @@ function renderHistoryPaginationInto(container, totalPages) {
 function setStatus(mode, text) {
   elements.statusPill.className = `status-pill ${mode}`;
   elements.statusPill.textContent = text;
+}
+
+function triggerHapticFeedback(duration = 10) {
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(duration);
+    }
+  } catch {
+    // Ignore unsupported haptics or browser restrictions.
+  }
 }
 
 function resetPerformanceSummary() {
