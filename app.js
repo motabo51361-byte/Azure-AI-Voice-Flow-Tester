@@ -19,6 +19,25 @@ const TRANSLATOR_LANGUAGES = [
   { code: "de", label: "German" },
   { code: "es", label: "Spanish" },
 ];
+const TRANSLATOR_REGIONS = [
+  "global",
+  "japaneast",
+  "eastasia",
+  "southeastasia",
+  "koreacentral",
+  "australiaeast",
+  "centralindia",
+  "eastus",
+  "eastus2",
+  "westus2",
+  "canadacentral",
+  "brazilsouth",
+  "northeurope",
+  "westeurope",
+  "uksouth",
+  "francecentral",
+  "swedencentral",
+];
 const DEFAULT_VOICES = [
   { locale: "en-US", shortName: "en-US-AvaNeural", displayName: "Ava" },
   { locale: "en-US", shortName: "en-US-JennyNeural", displayName: "Jenny" },
@@ -38,6 +57,8 @@ const TTS_OUTPUT_FORMATS = [
   "webm-24khz-16bit-mono-opus",
   "ogg-24khz-16bit-mono-opus",
 ];
+const DEFAULT_VOICE_LOCALES = [...new Set(DEFAULT_VOICES.map((voice) => voice.locale))].sort();
+const DEFAULT_VOICE_NAMES = DEFAULT_VOICES.map((voice) => voice.shortName);
 
 const defaultProfileSettings = {
   profileName: "Profile 1",
@@ -45,9 +66,13 @@ const defaultProfileSettings = {
   sttEndpoint: "https://japaneast.stt.speech.microsoft.com",
   speechKey: "",
   sttLocale: "ja-JP",
+  sttLocalePreset: "ja-JP",
+  sttLocaleCustom: "",
   translatorEndpoint: "https://api.cognitive.microsofttranslator.com/",
   translatorKey: "",
-  translatorRegion: "",
+  translatorRegion: "japaneast",
+  translatorRegionPreset: "japaneast",
+  translatorRegionCustom: "",
   useCustomTranslator: false,
   translatorCategory: "",
   translatorFromPreset: "ja",
@@ -57,8 +82,14 @@ const defaultProfileSettings = {
   ttsEndpoint: "https://japaneast.tts.speech.microsoft.com",
   ttsKey: "",
   ttsLanguage: "en-US",
+  ttsLanguagePreset: "en-US",
+  ttsLanguageCustom: "",
   ttsVoice: "en-US-AvaNeural",
+  ttsVoicePreset: "en-US-AvaNeural",
+  ttsVoiceCustom: "",
   ttsFormat: "audio-24khz-48kbitrate-mono-mp3",
+  ttsFormatPreset: "audio-24khz-48kbitrate-mono-mp3",
+  ttsFormatCustom: "",
   ttsRate: "+0%",
 };
 
@@ -70,10 +101,13 @@ const defaultProfiles = {
       ...defaultProfileSettings,
       profileName: "Profile 2",
       sttLocale: "zh-TW",
+      sttLocalePreset: "zh-TW",
       translatorFromPreset: "zh-Hant",
       translatorToPreset: "en",
       ttsLanguage: "en-US",
+      ttsLanguagePreset: "en-US",
       ttsVoice: "en-US-AvaNeural",
+      ttsVoicePreset: "en-US-AvaNeural",
     },
   },
 };
@@ -124,16 +158,27 @@ const elements = {
   micGuidanceCard: document.querySelector("#mic-guidance-card"),
   micGuidanceTitle: document.querySelector("#mic-guidance-title"),
   micGuidanceText: document.querySelector("#mic-guidance-text"),
-  sttLocale: document.querySelector('[name="sttLocale"]'),
+  sttLocalePreset: document.querySelector('[name="sttLocalePreset"]'),
+  sttLocaleCustom: document.querySelector('[name="sttLocaleCustom"]'),
   translatorFromPreset: document.querySelector('[name="translatorFromPreset"]'),
   translatorToPreset: document.querySelector('[name="translatorToPreset"]'),
   translatorFromCustom: document.querySelector('[name="translatorFromCustom"]'),
   translatorToCustom: document.querySelector('[name="translatorToCustom"]'),
+  translatorRegionPreset: document.querySelector('[name="translatorRegionPreset"]'),
+  translatorRegionCustom: document.querySelector('[name="translatorRegionCustom"]'),
   translatorFromCustomWrap: document.querySelector("#translator-from-custom-wrap"),
   translatorToCustomWrap: document.querySelector("#translator-to-custom-wrap"),
-  ttsLanguage: document.querySelector('[name="ttsLanguage"]'),
-  ttsVoice: document.querySelector('[name="ttsVoice"]'),
-  ttsFormat: document.querySelector('[name="ttsFormat"]'),
+  sttLocaleCustomWrap: document.querySelector("#stt-locale-custom-wrap"),
+  translatorRegionCustomWrap: document.querySelector("#translator-region-custom-wrap"),
+  ttsLanguagePreset: document.querySelector('[name="ttsLanguagePreset"]'),
+  ttsLanguageCustom: document.querySelector('[name="ttsLanguageCustom"]'),
+  ttsVoicePreset: document.querySelector('[name="ttsVoicePreset"]'),
+  ttsVoiceCustom: document.querySelector('[name="ttsVoiceCustom"]'),
+  ttsFormatPreset: document.querySelector('[name="ttsFormatPreset"]'),
+  ttsFormatCustom: document.querySelector('[name="ttsFormatCustom"]'),
+  ttsLanguageCustomWrap: document.querySelector("#tts-language-custom-wrap"),
+  ttsVoiceCustomWrap: document.querySelector("#tts-voice-custom-wrap"),
+  ttsFormatCustomWrap: document.querySelector("#tts-format-custom-wrap"),
   historyTemplate: document.querySelector("#history-item-template"),
 };
 
@@ -215,9 +260,14 @@ function wireEvents() {
   elements.quickProfileTabs.forEach((button) => {
     button.addEventListener("click", () => switchProfile(button.dataset.profileId));
   });
-  elements.ttsLanguage.addEventListener("change", () => {
-    renderVoiceOptions(elements.ttsLanguage.value);
+  elements.ttsLanguagePreset.addEventListener("change", () => {
+    renderVoiceOptions(resolveCustomizableValue(elements.ttsLanguagePreset.value, elements.ttsLanguageCustom.value));
     persistActiveProfileDraft();
+  });
+  elements.ttsLanguageCustom.addEventListener("input", () => {
+    if (elements.ttsLanguagePreset.value === CUSTOM_OPTION) {
+      renderVoiceOptions(elements.ttsLanguageCustom.value.trim());
+    }
   });
 
   bindPressAndHold(elements.recordBtn, {
@@ -227,15 +277,15 @@ function wireEvents() {
 }
 
 function renderStaticOptions() {
-  populateSelect(elements.sttLocale, STT_LOCALES.map((locale) => ({ value: locale, label: locale })));
+  populateSelectWithCustom(elements.sttLocalePreset, STT_LOCALES.map((locale) => ({ value: locale, label: locale })));
   const translatorOptions = TRANSLATOR_LANGUAGES.map((item) => ({ value: item.code, label: `${item.code} - ${item.label}` }));
   translatorOptions.push({ value: CUSTOM_OPTION, label: "Custom" });
   populateSelect(elements.translatorFromPreset, translatorOptions);
   populateSelect(elements.translatorToPreset, translatorOptions);
-  const voiceLocales = [...new Set(DEFAULT_VOICES.map((voice) => voice.locale))].sort();
-  populateSelect(elements.ttsLanguage, voiceLocales.map((locale) => ({ value: locale, label: locale })));
-  populateSelect(elements.ttsFormat, TTS_OUTPUT_FORMATS.map((format) => ({ value: format, label: format })));
-  renderVoiceOptions(elements.ttsLanguage.value || defaultProfileSettings.ttsLanguage);
+  renderTranslatorRegionOptions(defaultProfileSettings.translatorRegion);
+  populateSelectWithCustom(elements.ttsLanguagePreset, DEFAULT_VOICE_LOCALES.map((locale) => ({ value: locale, label: locale })));
+  populateSelectWithCustom(elements.ttsFormatPreset, TTS_OUTPUT_FORMATS.map((format) => ({ value: format, label: format })));
+  renderVoiceOptions(defaultProfileSettings.ttsLanguage);
 }
 
 function loadProfiles() {
@@ -245,8 +295,8 @@ function loadProfiles() {
     const legacyTheme = typeof savedUiState?.theme === "string" ? savedUiState.theme : null;
     if (saved?.profiles?.profileA && saved?.profiles?.profileB) {
       appState.activeProfileId = saved.activeProfileId || "profileA";
-      appState.profiles.profileA = { ...defaultProfiles.profiles.profileA, ...saved.profiles.profileA };
-      appState.profiles.profileB = { ...defaultProfiles.profiles.profileB, ...saved.profiles.profileB };
+      appState.profiles.profileA = normalizeProfileSettings({ ...defaultProfiles.profiles.profileA, ...saved.profiles.profileA });
+      appState.profiles.profileB = normalizeProfileSettings({ ...defaultProfiles.profiles.profileB, ...saved.profiles.profileB });
       if (!appState.profiles.profileA.theme && legacyTheme) {
         appState.profiles.profileA.theme = legacyTheme;
       }
@@ -258,6 +308,32 @@ function loadProfiles() {
     appState.activeProfileId = defaultProfiles.activeProfileId;
     appState.profiles = JSON.parse(JSON.stringify(defaultProfiles.profiles));
   }
+}
+
+function normalizeProfileSettings(profile) {
+  const normalizedSttLocale = normalizePresetAndCustom(profile.sttLocale, STT_LOCALES);
+  const normalizedTranslatorRegion = normalizePresetAndCustom(profile.translatorRegion, TRANSLATOR_REGIONS);
+  const normalizedTtsLanguage = normalizePresetAndCustom(profile.ttsLanguage, DEFAULT_VOICE_LOCALES);
+  const normalizedTtsVoice = normalizePresetAndCustom(profile.ttsVoice, DEFAULT_VOICE_NAMES);
+  const normalizedTtsFormat = normalizePresetAndCustom(profile.ttsFormat, TTS_OUTPUT_FORMATS);
+  return {
+    ...profile,
+    sttLocale: normalizedSttLocale.value || defaultProfileSettings.sttLocale,
+    sttLocalePreset: normalizedSttLocale.preset,
+    sttLocaleCustom: normalizedSttLocale.custom,
+    translatorRegion: normalizedTranslatorRegion.value || defaultProfileSettings.translatorRegion,
+    translatorRegionPreset: normalizedTranslatorRegion.preset,
+    translatorRegionCustom: normalizedTranslatorRegion.custom,
+    ttsLanguage: normalizedTtsLanguage.value || defaultProfileSettings.ttsLanguage,
+    ttsLanguagePreset: normalizedTtsLanguage.preset,
+    ttsLanguageCustom: normalizedTtsLanguage.custom,
+    ttsVoice: normalizedTtsVoice.value || defaultProfileSettings.ttsVoice,
+    ttsVoicePreset: normalizedTtsVoice.preset,
+    ttsVoiceCustom: normalizedTtsVoice.custom,
+    ttsFormat: normalizedTtsFormat.value || defaultProfileSettings.ttsFormat,
+    ttsFormatPreset: normalizedTtsFormat.preset,
+    ttsFormatCustom: normalizedTtsFormat.custom,
+  };
 }
 
 function saveProfiles() {
@@ -306,12 +382,13 @@ function hydrateProfile() {
       field.value = value ?? "";
     }
   }
+  ensurePresetMatchesCustom(elements.sttLocalePreset, elements.sttLocaleCustom, profile.sttLocale);
   ensureTranslatorPresetMatchesCustom("translatorFromPreset", "translatorFromCustom");
   ensureTranslatorPresetMatchesCustom("translatorToPreset", "translatorToCustom");
   renderProfileTabs();
+  renderTranslatorRegionOptions(profile.translatorRegion || defaultProfileSettings.translatorRegion);
   renderVoiceLocaleOptions();
   renderVoiceOptions(profile.ttsLanguage);
-  elements.ttsVoice.value = profile.ttsVoice || "";
   elements.themeSelect.value = profile.theme || "light";
   applyTheme(profile.theme);
   updateConditionalFields();
@@ -331,20 +408,28 @@ function renderProfileTabs() {
 }
 
 function renderVoiceLocaleOptions() {
-  const localeSet = new Set(DEFAULT_VOICES.map((voice) => voice.locale));
+  const localeSet = new Set(DEFAULT_VOICE_LOCALES);
   appState.voices.forEach((voice) => localeSet.add(voice.locale));
   const localeOptions = [...localeSet].sort().map((locale) => ({ value: locale, label: locale }));
-  const selected = elements.ttsLanguage.value;
-  populateSelect(elements.ttsLanguage, localeOptions);
-  elements.ttsLanguage.value = localeSet.has(selected) ? selected : localeOptions[0]?.value || "";
+  const currentLocale = resolveCustomizableValue(elements.ttsLanguagePreset?.value, elements.ttsLanguageCustom?.value) || getActiveProfile().ttsLanguage;
+  populateSelectWithCustom(elements.ttsLanguagePreset, localeOptions);
+  ensurePresetMatchesCustom(elements.ttsLanguagePreset, elements.ttsLanguageCustom, currentLocale);
 }
 
 function renderVoiceOptions(locale) {
   const voices = appState.voices.filter((voice) => !locale || voice.locale === locale).sort((a, b) => a.shortName.localeCompare(b.shortName));
-  populateSelect(elements.ttsVoice, voices.map((voice) => ({ value: voice.shortName, label: `${voice.shortName} - ${voice.displayName}` })));
-  if (!voices.some((voice) => voice.shortName === elements.ttsVoice.value)) {
-    elements.ttsVoice.value = voices[0]?.shortName || "";
+  populateSelectWithCustom(elements.ttsVoicePreset, voices.map((voice) => ({ value: voice.shortName, label: `${voice.shortName} - ${voice.displayName}` })));
+  const currentVoice = resolveCustomizableValue(elements.ttsVoicePreset?.value, elements.ttsVoiceCustom?.value) || getActiveProfile().ttsVoice;
+  ensurePresetMatchesCustom(elements.ttsVoicePreset, elements.ttsVoiceCustom, currentVoice);
+}
+
+function renderTranslatorRegionOptions(selectedRegion = defaultProfileSettings.translatorRegion) {
+  const regionOptions = [...TRANSLATOR_REGIONS];
+  if (selectedRegion && !regionOptions.includes(selectedRegion)) {
+    regionOptions.push(selectedRegion);
   }
+  populateSelectWithCustom(elements.translatorRegionPreset, regionOptions.map((region) => ({ value: region, label: region })));
+  ensurePresetMatchesCustom(elements.translatorRegionPreset, elements.translatorRegionCustom, selectedRegion || defaultProfileSettings.translatorRegion);
 }
 
 function handleSettingsChanged() {
@@ -353,8 +438,13 @@ function handleSettingsChanged() {
 }
 
 function updateConditionalFields() {
+  toggleConditionalField(elements.sttLocaleCustomWrap, elements.sttLocalePreset.value === CUSTOM_OPTION);
+  toggleConditionalField(elements.translatorRegionCustomWrap, elements.translatorRegionPreset.value === CUSTOM_OPTION);
   toggleConditionalField(elements.translatorFromCustomWrap, elements.translatorFromPreset.value === CUSTOM_OPTION);
   toggleConditionalField(elements.translatorToCustomWrap, elements.translatorToPreset.value === CUSTOM_OPTION);
+  toggleConditionalField(elements.ttsLanguageCustomWrap, elements.ttsLanguagePreset.value === CUSTOM_OPTION);
+  toggleConditionalField(elements.ttsVoiceCustomWrap, elements.ttsVoicePreset.value === CUSTOM_OPTION);
+  toggleConditionalField(elements.ttsFormatCustomWrap, elements.ttsFormatPreset.value === CUSTOM_OPTION);
 }
 
 function toggleConditionalField(wrapper, visible) {
@@ -362,22 +452,31 @@ function toggleConditionalField(wrapper, visible) {
 }
 
 function persistActiveProfileDraft() {
-  appState.profiles[appState.activeProfileId] = collectProfileFromForm();
+  appState.profiles[appState.activeProfileId] = normalizeProfileSettings(collectProfileFromForm());
   saveProfiles();
   renderProfileTabs();
 }
 
 function collectProfileFromForm() {
   const data = new FormData(elements.settingsForm);
+  const sttLocale = resolveCustomizableValue(data.get("sttLocalePreset"), data.get("sttLocaleCustom"));
+  const translatorRegion = resolveCustomizableValue(data.get("translatorRegionPreset"), data.get("translatorRegionCustom"));
+  const ttsLanguage = resolveCustomizableValue(data.get("ttsLanguagePreset"), data.get("ttsLanguageCustom"));
+  const ttsVoice = resolveCustomizableValue(data.get("ttsVoicePreset"), data.get("ttsVoiceCustom"));
+  const ttsFormat = resolveCustomizableValue(data.get("ttsFormatPreset"), data.get("ttsFormatCustom"));
   return {
     profileName: String(elements.profileName.value || "").trim() || "Untitled Profile",
     theme: String(elements.themeSelect.value || "light").trim() || "light",
     sttEndpoint: sanitizeUrl(data.get("sttEndpoint")),
     speechKey: String(data.get("speechKey") || "").trim(),
-    sttLocale: String(data.get("sttLocale") || "").trim(),
+    sttLocale,
+    sttLocalePreset: String(data.get("sttLocalePreset") || ""),
+    sttLocaleCustom: String(data.get("sttLocaleCustom") || "").trim(),
     translatorEndpoint: sanitizeUrl(data.get("translatorEndpoint")),
     translatorKey: String(data.get("translatorKey") || "").trim(),
-    translatorRegion: String(data.get("translatorRegion") || "").trim(),
+    translatorRegion,
+    translatorRegionPreset: String(data.get("translatorRegionPreset") || ""),
+    translatorRegionCustom: String(data.get("translatorRegionCustom") || "").trim(),
     useCustomTranslator: Boolean(elements.settingsForm.elements.namedItem("useCustomTranslator").checked),
     translatorCategory: String(data.get("translatorCategory") || "").trim(),
     translatorFromPreset: String(data.get("translatorFromPreset") || ""),
@@ -386,9 +485,15 @@ function collectProfileFromForm() {
     translatorToCustom: String(data.get("translatorToCustom") || "").trim(),
     ttsEndpoint: sanitizeUrl(data.get("ttsEndpoint")),
     ttsKey: String(data.get("ttsKey") || "").trim(),
-    ttsLanguage: String(data.get("ttsLanguage") || "").trim(),
-    ttsVoice: String(data.get("ttsVoice") || "").trim(),
-    ttsFormat: String(data.get("ttsFormat") || "").trim(),
+    ttsLanguage,
+    ttsLanguagePreset: String(data.get("ttsLanguagePreset") || ""),
+    ttsLanguageCustom: String(data.get("ttsLanguageCustom") || "").trim(),
+    ttsVoice,
+    ttsVoicePreset: String(data.get("ttsVoicePreset") || ""),
+    ttsVoiceCustom: String(data.get("ttsVoiceCustom") || "").trim(),
+    ttsFormat,
+    ttsFormatPreset: String(data.get("ttsFormatPreset") || ""),
+    ttsFormatCustom: String(data.get("ttsFormatCustom") || "").trim(),
     ttsRate: String(data.get("ttsRate") || "").trim(),
   };
 }
@@ -406,6 +511,10 @@ function resolveTranslatorCode(presetValue, customValue) {
   return presetValue === CUSTOM_OPTION ? customValue.trim() : presetValue;
 }
 
+function resolveCustomizableValue(presetValue, customValue) {
+  return presetValue === CUSTOM_OPTION ? String(customValue || "").trim() : String(presetValue || "").trim();
+}
+
 function ensureTranslatorPresetMatchesCustom(presetFieldName, customFieldName) {
   const profile = getActiveProfile();
   const presetField = elements.settingsForm.elements.namedItem(presetFieldName);
@@ -417,6 +526,16 @@ function ensureTranslatorPresetMatchesCustom(presetFieldName, customFieldName) {
   }
   presetField.value = CUSTOM_OPTION;
   customField.value = profile[customFieldName] || presetValue || "";
+}
+
+function ensurePresetMatchesCustom(presetField, customField, effectiveValue) {
+  if ([...presetField.options].some((option) => option.value === effectiveValue)) {
+    presetField.value = effectiveValue;
+    customField.value = "";
+    return;
+  }
+  presetField.value = CUSTOM_OPTION;
+  customField.value = effectiveValue || "";
 }
 
 function handleThemeChange() {
@@ -981,7 +1100,7 @@ async function handleLoadVoices() {
         displayName: voice.DisplayName || voice.ShortName,
       }));
       renderVoiceLocaleOptions();
-      renderVoiceOptions(elements.ttsLanguage.value);
+      renderVoiceOptions(resolveCustomizableValue(elements.ttsLanguagePreset.value, elements.ttsLanguageCustom.value));
       persistActiveProfileDraft();
     }
     log(`Loaded ${Array.isArray(voices) ? voices.length : 0} voices.`);
@@ -1532,6 +1651,25 @@ function populateSelect(select, options) {
     select.appendChild(node);
   });
   if (options.some((option) => option.value === currentValue)) select.value = currentValue;
+}
+
+function populateSelectWithCustom(select, options) {
+  const withCustom = [...options];
+  if (!withCustom.some((option) => option.value === CUSTOM_OPTION)) {
+    withCustom.push({ value: CUSTOM_OPTION, label: "Custom" });
+  }
+  populateSelect(select, withCustom);
+}
+
+function normalizePresetAndCustom(value, options) {
+  const normalizedValue = String(value || "").trim();
+  if (!normalizedValue) {
+    return { value: "", preset: CUSTOM_OPTION, custom: "" };
+  }
+  if (options.includes(normalizedValue)) {
+    return { value: normalizedValue, preset: normalizedValue, custom: "" };
+  }
+  return { value: normalizedValue, preset: CUSTOM_OPTION, custom: normalizedValue };
 }
 
 function log(message) {

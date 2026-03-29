@@ -133,11 +133,15 @@
             </label>
             <label>
               <span>Locale</span>
-              <select name="sttLocale"></select>
+              <select name="sttLocalePreset"></select>
               <small class="field-help">
                 Locale is the speech recognition language locale in BCP-47 format.
                 Examples: <code>ja-JP</code>, <code>en-US</code>, <code>zh-TW</code>.
               </small>
+            </label>
+            <label id="stt-locale-custom-wrap" class="conditional-field is-hidden">
+              <span>Custom Locale</span>
+              <input name="sttLocaleCustom" type="text" placeholder="Enter custom locale">
             </label>
             <div class="field-links">
               <a class="doc-link" href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=stt-tts" target="_blank" rel="noreferrer">Speech locale docs</a>
@@ -159,7 +163,14 @@
             </label>
             <label>
               <span>Translator Region</span>
-              <input name="translatorRegion" type="text" placeholder="japaneast">
+              <select name="translatorRegionPreset"></select>
+              <small class="field-help">
+                Region for the Translator resource. Default is <code>japaneast</code>.
+              </small>
+            </label>
+            <label id="translator-region-custom-wrap" class="conditional-field is-hidden">
+              <span>Custom Region</span>
+              <input name="translatorRegionCustom" type="text" placeholder="Enter custom region">
             </label>
             <label class="checkbox">
               <input name="useCustomTranslator" type="checkbox">
@@ -217,29 +228,43 @@
             <div class="grid-two">
               <label>
                 <span>Voice Locale</span>
-                <select name="ttsLanguage"></select>
+                <select name="ttsLanguagePreset"></select>
                 <small class="field-help">
                   Voice locale in BCP-47 format. Examples: <code>en-US</code>, <code>ja-JP</code>, <code>zh-TW</code>.
                 </small>
               </label>
               <label>
                 <span>Voice Name</span>
-                <select id="tts-voice-select" name="ttsVoice"></select>
+                <select id="tts-voice-select" name="ttsVoicePreset"></select>
                 <small class="field-help">
                   Full Azure voice short name. Examples: <code>en-US-AvaNeural</code>, <code>ja-JP-NanamiNeural</code>, <code>zh-TW-HsiaoChenNeural</code>.
                 </small>
               </label>
             </div>
             <div class="grid-two">
+              <label id="tts-language-custom-wrap" class="conditional-field is-hidden">
+                <span>Custom Voice Locale</span>
+                <input name="ttsLanguageCustom" type="text" placeholder="Enter custom voice locale">
+              </label>
+              <label id="tts-voice-custom-wrap" class="conditional-field is-hidden">
+                <span>Custom Voice Name</span>
+                <input name="ttsVoiceCustom" type="text" placeholder="Enter custom voice name">
+              </label>
+            </div>
+            <div class="grid-two">
               <label>
                 <span>Output Format</span>
-                <select name="ttsFormat"></select>
+                <select name="ttsFormatPreset"></select>
               </label>
               <label>
                 <span>Rate</span>
                 <input name="ttsRate" type="text" value="+0%">
               </label>
             </div>
+            <label id="tts-format-custom-wrap" class="conditional-field is-hidden">
+              <span>Custom Output Format</span>
+              <input name="ttsFormatCustom" type="text" placeholder="Enter custom output format">
+            </label>
             <div class="section-actions">
               <button id="load-voices-btn" class="secondary-button" type="button">Load Voices</button>
             </div>
