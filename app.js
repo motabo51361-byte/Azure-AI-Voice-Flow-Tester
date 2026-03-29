@@ -41,7 +41,7 @@ const TTS_OUTPUT_FORMATS = [
 
 const defaultProfileSettings = {
   profileName: "Profile 1",
-  theme: "light",
+  theme: "silvermetal",
   sttEndpoint: "https://japaneast.stt.speech.microsoft.com",
   speechKey: "",
   sttLocale: "ja-JP",
@@ -79,10 +79,12 @@ const defaultProfiles = {
 };
 
 const elements = {
+  openHistoryFab: document.querySelector("#open-history-fab"),
+  historyDrawer: document.querySelector("#history-drawer"),
+  historyBackdrop: document.querySelector("#history-backdrop"),
   settingsForm: document.querySelector("#settings-form"),
-  saveSettingsBtn: document.querySelector("#save-settings-btn"),
   openSettingsFab: document.querySelector("#open-settings-fab"),
-  settingsFabProfile: document.querySelector("#settings-fab-profile"),
+  quickProfileTabs: Array.from(document.querySelectorAll(".profile-quick-tab")),
   toggleSettingsBtn: document.querySelector("#toggle-settings-btn"),
   settingsContent: document.querySelector("#settings-content"),
   settingsDrawer: document.querySelector("#settings-drawer"),
@@ -105,7 +107,6 @@ const elements = {
   audioMeta: document.querySelector("#audio-meta"),
   logOutput: document.querySelector("#log-output"),
   clearLogBtn: document.querySelector("#clear-log-btn"),
-  toggleLogBtn: document.querySelector("#toggle-log-btn"),
   logContent: document.querySelector("#log-content"),
   perfTrendChart: document.querySelector("#perf-trend-chart"),
   perfViewButtons: Array.from(document.querySelectorAll(".view-switcher-btn")),
@@ -114,10 +115,11 @@ const elements = {
   historyList: document.querySelector("#history-list"),
   historyPaginationTop: document.querySelector("#history-pagination-top"),
   historyPagination: document.querySelector("#history-pagination"),
-  refreshHistoryBtn: document.querySelector("#refresh-history-btn"),
   clearHistoryBtn: document.querySelector("#clear-history-btn"),
   loadVoicesBtn: document.querySelector("#load-voices-btn"),
   enableMicBtn: document.querySelector("#enable-mic-btn"),
+  vuMeter: document.querySelector("#vu-meter"),
+  vuMeterColumns: Array.from(document.querySelectorAll(".vu-meter-column")),
   micPermissionPill: document.querySelector("#mic-permission-pill"),
   micGuidanceCard: document.querySelector("#mic-guidance-card"),
   micGuidanceTitle: document.querySelector("#mic-guidance-title"),
@@ -140,8 +142,7 @@ let appState = {
   profiles: JSON.parse(JSON.stringify(defaultProfiles.profiles)),
   voices: [...DEFAULT_VOICES],
   settingsOpen: false,
-  historyOpen: true,
-  logOpen: true,
+  historyOpen: false,
   historyPage: 1,
   performanceView: "total",
 };
@@ -160,6 +161,12 @@ let recorderState = {
   activeRecordingPromise: null,
   permissionState: "unknown",
   releaseStartedAt: 0,
+  meterContext: null,
+  meterAnalyser: null,
+  meterSource: null,
+  meterData: null,
+  meterAnimationFrame: 0,
+  meterLevel: 0,
 };
 
 boot();
@@ -172,26 +179,24 @@ async function boot() {
   wireEvents();
   renderSettingsVisibility();
   renderHistoryVisibility();
-  renderLogVisibility();
+  buildVuMeter();
   resetPerformanceSummary();
+  setVuMeterLevel(0);
   await initMicrophonePermissionState();
   await renderHistory();
   log("App ready. Fill in Azure settings and hold the record button.");
 }
 
 function wireEvents() {
-  elements.saveSettingsBtn.addEventListener("click", handleSaveSettings);
   elements.clearLogBtn.addEventListener("click", () => {
     elements.logOutput.innerHTML = "";
-  });
-  elements.toggleLogBtn.addEventListener("click", toggleLogPanel);
-  elements.refreshHistoryBtn.addEventListener("click", () => {
-    renderHistory();
   });
   elements.toggleHistoryBtn.addEventListener("click", toggleHistoryPanel);
   elements.clearHistoryBtn.addEventListener("click", handleClearHistory);
   elements.loadVoicesBtn.addEventListener("click", handleLoadVoices);
   elements.enableMicBtn.addEventListener("click", handleEnableMicrophone);
+  elements.openHistoryFab.addEventListener("click", () => setHistoryOpen(true));
+  elements.historyBackdrop.addEventListener("click", () => setHistoryOpen(false));
   elements.openSettingsFab.addEventListener("click", () => setSettingsOpen(true));
   elements.toggleSettingsBtn.addEventListener("click", toggleSettingsPanel);
   elements.settingsBackdrop.addEventListener("click", () => setSettingsOpen(false));
@@ -205,6 +210,9 @@ function wireEvents() {
   elements.settingsForm.addEventListener("change", handleSettingsChanged);
   elements.settingsForm.addEventListener("input", handleSettingsChanged);
   elements.profileTabs.forEach((button) => {
+    button.addEventListener("click", () => switchProfile(button.dataset.profileId));
+  });
+  elements.quickProfileTabs.forEach((button) => {
     button.addEventListener("click", () => switchProfile(button.dataset.profileId));
   });
   elements.ttsLanguage.addEventListener("change", () => {
@@ -265,18 +273,14 @@ function loadUiState() {
     if (typeof saved?.historyOpen === "boolean") {
       appState.historyOpen = saved.historyOpen;
     }
-    if (typeof saved?.logOpen === "boolean") {
-      appState.logOpen = saved.logOpen;
-    }
   } catch {
     appState.settingsOpen = false;
-    appState.historyOpen = true;
-    appState.logOpen = true;
+    appState.historyOpen = false;
   }
 }
 
 function saveUiState() {
-  localStorage.setItem(UI_KEY, JSON.stringify({ settingsOpen: appState.settingsOpen, historyOpen: appState.historyOpen, logOpen: appState.logOpen }));
+  localStorage.setItem(UI_KEY, JSON.stringify({ settingsOpen: appState.settingsOpen, historyOpen: appState.historyOpen }));
 }
 
 function getActiveProfile() {
@@ -319,7 +323,11 @@ function renderProfileTabs() {
     button.classList.toggle("active", profileId === appState.activeProfileId);
     button.textContent = appState.profiles[profileId].profileName || `Profile ${index + 1}`;
   });
-  elements.settingsFabProfile.textContent = getActiveProfile().profileName || "Profile";
+  elements.quickProfileTabs.forEach((button, index) => {
+    const profileId = button.dataset.profileId;
+    button.classList.toggle("active", profileId === appState.activeProfileId);
+    button.textContent = appState.profiles[profileId].profileName || `Profile ${index + 1}`;
+  });
 }
 
 function renderVoiceLocaleOptions() {
@@ -411,11 +419,6 @@ function ensureTranslatorPresetMatchesCustom(presetFieldName, customFieldName) {
   customField.value = profile[customFieldName] || presetValue || "";
 }
 
-function handleSaveSettings() {
-  persistActiveProfileDraft();
-  log("Profiles saved to localStorage.");
-}
-
 function handleThemeChange() {
   persistActiveProfileDraft();
   applyTheme(getActiveProfile().theme);
@@ -464,25 +467,13 @@ function setHistoryOpen(nextOpen) {
 }
 
 function renderHistoryVisibility() {
-  elements.historyContent.classList.toggle("is-collapsed", !appState.historyOpen);
+  elements.historyContent.classList.remove("is-collapsed");
+  elements.historyBackdrop.hidden = !appState.historyOpen;
+  elements.historyDrawer.classList.toggle("is-open", appState.historyOpen);
+  elements.historyDrawer.setAttribute("aria-hidden", String(!appState.historyOpen));
+  elements.openHistoryFab.setAttribute("aria-expanded", String(appState.historyOpen));
   elements.toggleHistoryBtn.setAttribute("aria-expanded", String(appState.historyOpen));
-  elements.toggleHistoryBtn.textContent = appState.historyOpen ? "Hide" : "Show";
-}
-
-function toggleLogPanel() {
-  setLogOpen(!appState.logOpen);
-}
-
-function setLogOpen(nextOpen) {
-  appState.logOpen = nextOpen;
-  saveUiState();
-  renderLogVisibility();
-}
-
-function renderLogVisibility() {
-  elements.logContent.classList.toggle("is-collapsed", !appState.logOpen);
-  elements.toggleLogBtn.setAttribute("aria-expanded", String(appState.logOpen));
-  elements.toggleLogBtn.textContent = appState.logOpen ? "Hide" : "Show";
+  elements.toggleHistoryBtn.textContent = "Close";
 }
 
 function applyTheme(themeName = getActiveProfile()?.theme || "light") {
@@ -519,6 +510,7 @@ async function beginRecording() {
     });
     mediaRecorder.start();
     elements.recordBtn.classList.add("recording");
+    elements.vuMeter.classList.add("is-recording");
     setStatus("processing", "Recording");
     log("Recording started.");
   } catch (error) {
@@ -578,12 +570,14 @@ async function handleEnableMicrophone() {
   }
   try {
     if (recorderState.permissionStream) {
+      await ensureVuMeter();
       updateMicPermission("granted");
       log("Microphone permission already granted.");
       return;
     }
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recorderState.permissionStream = stream;
+    await ensureVuMeter();
     updateMicPermission("granted");
     log("Microphone permission granted and ready.");
   } catch (error) {
@@ -594,10 +588,12 @@ async function handleEnableMicrophone() {
 
 async function getRecordingStream() {
   if (recorderState.permissionStream) {
+    await ensureVuMeter();
     return cloneAudioStream(recorderState.permissionStream);
   }
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   recorderState.permissionStream = stream;
+  await ensureVuMeter();
   updateMicPermission("granted");
   return cloneAudioStream(stream);
 }
@@ -696,6 +692,12 @@ function updateMicPermission(state) {
   const pillMode = state === "granted" ? "success" : state === "denied" ? "error" : "idle";
   elements.micPermissionPill.className = `status-pill ${pillMode}`;
   elements.micPermissionPill.textContent = labels[state] || labels.unknown;
+  if (state !== "granted") {
+    stopVuMeter();
+    setVuMeterLevel(0);
+  } else if (recorderState.permissionStream) {
+    ensureVuMeter().catch(() => {});
+  }
   updateMicGuidance(state);
 }
 
@@ -722,6 +724,103 @@ function updateMicGuidance(state) {
   elements.micGuidanceText.textContent = "Click Enable Microphone once before using Hold To Record.";
 }
 
+async function ensureVuMeter() {
+  if (!recorderState.permissionStream || !elements.vuMeter) return;
+
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) return;
+
+  if (!recorderState.meterContext) {
+    recorderState.meterContext = new AudioContextCtor();
+  }
+
+  if (recorderState.meterContext.state === "suspended") {
+    await recorderState.meterContext.resume();
+  }
+
+  if (!recorderState.meterAnalyser) {
+    recorderState.meterAnalyser = recorderState.meterContext.createAnalyser();
+    recorderState.meterAnalyser.fftSize = 512;
+    recorderState.meterAnalyser.smoothingTimeConstant = 0.82;
+    recorderState.meterData = new Uint8Array(recorderState.meterAnalyser.fftSize);
+  }
+
+  if (recorderState.meterSource) {
+    recorderState.meterSource.disconnect();
+  }
+
+  recorderState.meterSource = recorderState.meterContext.createMediaStreamSource(recorderState.permissionStream);
+  recorderState.meterSource.connect(recorderState.meterAnalyser);
+  elements.vuMeter.classList.add("is-active");
+  startVuMeterLoop();
+}
+
+function startVuMeterLoop() {
+  if (recorderState.meterAnimationFrame || !recorderState.meterAnalyser) return;
+
+  const update = () => {
+    if (!recorderState.meterAnalyser || !recorderState.meterData) {
+      recorderState.meterAnimationFrame = 0;
+      return;
+    }
+
+    recorderState.meterAnalyser.getByteTimeDomainData(recorderState.meterData);
+    let sum = 0;
+    for (const value of recorderState.meterData) {
+      const normalized = (value - 128) / 128;
+      sum += normalized * normalized;
+    }
+    const rms = Math.sqrt(sum / recorderState.meterData.length);
+    const boostedLevel = Math.min(1, rms * 5.5);
+    recorderState.meterLevel = (recorderState.meterLevel * 0.72) + (boostedLevel * 0.28);
+    setVuMeterLevel(recorderState.meterLevel);
+    recorderState.meterAnimationFrame = window.requestAnimationFrame(update);
+  };
+
+  recorderState.meterAnimationFrame = window.requestAnimationFrame(update);
+}
+
+function stopVuMeter() {
+  if (recorderState.meterAnimationFrame) {
+    window.cancelAnimationFrame(recorderState.meterAnimationFrame);
+    recorderState.meterAnimationFrame = 0;
+  }
+  if (recorderState.meterSource) {
+    recorderState.meterSource.disconnect();
+    recorderState.meterSource = null;
+  }
+  recorderState.meterLevel = 0;
+  elements.vuMeter.classList.remove("is-active", "is-recording");
+  elements.vuMeter.classList.remove("is-peak");
+}
+
+function setVuMeterLevel(level) {
+  if (!elements.vuMeter) return;
+  const clamped = Math.max(0, Math.min(1, level || 0));
+  const leds = Array.from(document.querySelectorAll(".vu-meter-led"));
+  const totalSteps = 12;
+  const litCount = Math.max(1, Math.round(clamped * totalSteps));
+  leds.forEach((led, index) => {
+    const stepIndex = totalSteps - (index % totalSteps);
+    const isOn = litCount >= stepIndex && clamped > 0.02;
+    led.classList.toggle("is-on", isOn);
+    led.classList.toggle("is-warn", isOn && stepIndex <= 3 && stepIndex > 1);
+    led.classList.toggle("is-peak", isOn && stepIndex <= 1);
+  });
+}
+
+function buildVuMeter() {
+  if (!elements.vuMeterColumns.length) return;
+  elements.vuMeterColumns.forEach((column) => {
+    if (column.children.length) return;
+    for (let i = 0; i < 12; i += 1) {
+      const led = document.createElement("span");
+      led.className = "vu-meter-led";
+      column.appendChild(led);
+    }
+  });
+}
+
 async function processRecording(audioBlob, transcript) {
   const settings = getSettings();
   const startedAt = new Date().toISOString();
@@ -743,7 +842,7 @@ async function processRecording(audioBlob, transcript) {
   const sttCompletedAt = performance.now();
   apiCalls.push({
     service: "Speech-to-Text",
-    method: "SDK",
+    method: "POST",
     url: normalizeSpeechSdkEndpoint(settings.sttEndpoint),
     params: {
       recognitionLanguage: settings.sttLocale,
@@ -917,7 +1016,6 @@ async function renderHistory() {
     const time = fragment.querySelector(".history-time");
     const stt = fragment.querySelector(".history-stt");
     const translation = fragment.querySelector(".history-translation");
-    const meta = fragment.querySelector(".history-meta");
     const performance = fragment.querySelector(".history-performance");
     const apiWrap = fragment.querySelector(".history-api");
     const audio = fragment.querySelector(".history-audio");
@@ -926,12 +1024,11 @@ async function renderHistory() {
     const card = fragment.querySelector(".history-item");
 
     title.textContent = `#${entry.sequence || 0}  ${entry.profileName || "Profile"}`;
-    subtitle.textContent = `${entry.sourceLanguage || entry.detectedLocale || "unknown"} -> ${entry.targetLanguage || "unknown"}`;
+    subtitle.textContent = "";
     card.id = `history-seq-${entry.sequence || 0}`;
     time.textContent = formatDateTime(entry.createdAt);
     stt.textContent = entry.transcript || "(empty)";
     translation.textContent = entry.translatedText || "(empty)";
-    meta.textContent = [`Locale: ${entry.detectedLocale || "-"}`, `Voice: ${entry.ttsVoice || "-"}`, `Audio: ${entry.audioMimeType || "-"}`].join(" | ");
     performance.innerHTML = buildHistoryPerformanceMarkup(entry.performanceStats);
 
     if (Array.isArray(entry.apiCalls)) {
@@ -940,6 +1037,15 @@ async function renderHistory() {
         card.className = "api-call";
         const heading = document.createElement("h5");
         heading.textContent = `${call.service} | ${call.method}`;
+        const context = document.createElement("p");
+        context.className = "api-call-context";
+        if (call.service === "Speech-to-Text") {
+          context.textContent = [`Locale: ${entry.detectedLocale || "-"}`, `Audio: ${entry.audioMimeType || "-"}`].join(" | ");
+        } else if (call.service === "Translator") {
+          context.textContent = [`From: ${entry.sourceLanguage || entry.detectedLocale || "-"}`, `To: ${entry.targetLanguage || "-"}`].join(" | ");
+        } else if (call.service === "Text-to-Speech") {
+          context.textContent = [`Voice: ${entry.ttsVoice || "-"}`, `Output: ${entry.ttsAudioMimeType || "-"}`].join(" | ");
+        }
         const url = document.createElement("p");
         url.textContent = call.url;
         const pre = document.createElement("pre");
@@ -947,9 +1053,9 @@ async function renderHistory() {
         if (typeof call.durationMs === "number") {
           const duration = document.createElement("p");
           duration.textContent = `Duration: ${formatMilliseconds(call.durationMs)}`;
-          card.append(heading, url, duration, pre);
+          card.append(heading, context, url, duration, pre);
         } else {
-          card.append(heading, url, pre);
+          card.append(heading, context, url, pre);
         }
         apiWrap.appendChild(card);
       });
@@ -1024,6 +1130,18 @@ function renderHistoryPagination(totalPages) {
 }
 
 function renderHistoryPaginationInto(container, totalPages) {
+  const firstButton = document.createElement("button");
+  firstButton.className = "ghost-button";
+  firstButton.type = "button";
+  firstButton.textContent = "First";
+  firstButton.disabled = appState.historyPage === 1;
+  firstButton.addEventListener("click", async () => {
+    if (appState.historyPage !== 1) {
+      appState.historyPage = 1;
+      await renderHistory();
+    }
+  });
+
   const prevButton = document.createElement("button");
   prevButton.className = "ghost-button";
   prevButton.type = "button";
@@ -1052,7 +1170,7 @@ function renderHistoryPaginationInto(container, totalPages) {
     }
   });
 
-  container.append(prevButton, info, nextButton);
+  container.append(firstButton, prevButton, info, nextButton);
 }
 
 function setStatus(mode, text) {
@@ -1121,7 +1239,7 @@ function renderPerformanceTrend(entries) {
 
   const sorted = [...entries].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
   const viewAriaLabels = {
-    total: "Total API response time trend",
+    total: "API response time trend",
     stt: "STT response time trend",
     translation: "Translation response time trend",
     tts: "TTS response time trend",
@@ -1284,6 +1402,7 @@ function setAudioPlayer(audioBlob) {
 
 function cleanupRecorder() {
   elements.recordBtn.classList.remove("recording");
+  elements.vuMeter.classList.remove("is-recording");
   recorderState.mediaRecorder = null;
   recorderState.stream = null;
   recorderState.chunks = [];

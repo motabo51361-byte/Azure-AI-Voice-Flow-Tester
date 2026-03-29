@@ -12,14 +12,27 @@
   <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
 </head>
 <body>
-  <button id="open-settings-fab" class="settings-fab" type="button" aria-expanded="false" aria-controls="settings-drawer" aria-label="Open settings">
-    <span class="settings-fab-icon" aria-hidden="true">&#9881;</span>
-    <span id="settings-fab-profile" class="settings-fab-profile">Profile 1</span>
-  </button>
+  <div class="history-toolbar">
+    <button id="open-history-fab" class="history-fab" type="button" aria-expanded="false" aria-controls="history-drawer" aria-label="Open history">
+      <span class="history-fab-icon" aria-hidden="true">&#128214;</span>
+    </button>
+  </div>
+  <div class="settings-toolbar">
+    <button id="open-settings-fab" class="settings-fab" type="button" aria-expanded="false" aria-controls="settings-drawer" aria-label="Open settings">
+      <span class="settings-fab-icon" aria-hidden="true">&#9881;</span>
+    </button>
+    <div class="settings-quick-switch" role="tablist" aria-label="Quick profile switch">
+      <button class="profile-quick-tab active" type="button" data-profile-id="profileA">Profile 1</button>
+      <button class="profile-quick-tab" type="button" data-profile-id="profileB">Profile 2</button>
+    </div>
+  </div>
   <div class="page-shell">
     <header class="hero">
       <div class="hero-copy">
         <div class="hero-main">
+          <div class="hero-art" aria-hidden="true">
+            <img src="./app-icon.png" alt="" class="hero-icon">
+          </div>
           <div class="hero-text-block">
             <p class="eyebrow">Speech-to-Text &bull; Translator &bull; Text-to-Speech</p>
             <h1>Azure AI Voice Flow Tester</h1>
@@ -28,21 +41,54 @@
               History stays in the browser so recordings and transcripts can be reviewed any time.
             </p>
           </div>
-          <div class="hero-art" aria-hidden="true">
-            <img src="./app-icon.png" alt="" class="hero-icon">
-          </div>
         </div>
       </div>
     </header>
 
     <main class="layout">
+      <aside id="history-drawer" class="history-drawer" aria-hidden="true">
+      <section class="panel history-panel drawer-panel">
+        <div class="section-head">
+          <h2>History</h2>
+          <div class="section-actions">
+            <button id="toggle-history-btn" class="ghost-button" type="button" aria-expanded="false" aria-controls="history-drawer">Close</button>
+          </div>
+        </div>
+        <p class="history-copy">Recordings, transcripts, translations, and a small settings summary are stored in this browser's IndexedDB.</p>
+        <div id="history-content" class="history-content">
+          <div class="trend-panel history-trend-panel">
+            <div class="result-head trend-head">
+              <h3>API Respond Time</h3>
+              <div id="perf-view-switcher" class="view-switcher" role="tablist" aria-label="Performance view">
+                <button class="view-switcher-btn active" type="button" data-view="total">Total</button>
+                <button class="view-switcher-btn" type="button" data-view="stt">STT</button>
+                <button class="view-switcher-btn" type="button" data-view="translation">Translation</button>
+                <button class="view-switcher-btn" type="button" data-view="tts">TTS</button>
+              </div>
+            </div>
+            <svg id="perf-trend-chart" class="trend-chart" viewBox="0 0 640 220" role="img" aria-label="API response time trend"></svg>
+          </div>
+          <div class="history-section-head">
+            <h3>API Call History</h3>
+            <div class="history-section-actions">
+              <div id="history-pagination-top" class="history-pagination history-pagination-top"></div>
+              <button id="clear-history-btn" class="ghost-button danger" type="button">Clear All</button>
+            </div>
+          </div>
+          <div id="history-list" class="history-list"></div>
+          <div id="history-pagination" class="history-pagination"></div>
+        </div>
+      </section>
+      </aside>
+
+      <div id="history-backdrop" class="history-backdrop" hidden></div>
+
       <aside id="settings-drawer" class="settings-drawer" aria-hidden="true">
       <section class="panel settings-panel">
         <div class="section-head">
           <h2>Service Settings</h2>
           <div class="section-actions">
             <button id="toggle-settings-btn" class="ghost-button" type="button" aria-expanded="false" aria-controls="settings-drawer">Close</button>
-            <button id="save-settings-btn" class="ghost-button" type="button">Save</button>
           </div>
         </div>
 
@@ -61,6 +107,8 @@
               <option value="camo">Battlefield Camo</option>
               <option value="miku">Miku Style</option>
               <option value="sakura">Spring Sakura</option>
+              <option value="blackmetal">Black Metal HiFi</option>
+              <option value="silvermetal">Silver Metal HiFi</option>
               <option value="dark">Dark Eye Care</option>
               <option value="light">Light Fresh</option>
             </select>
@@ -242,11 +290,61 @@
             <button id="enable-mic-btn" class="secondary-button" type="button">Enable Microphone</button>
             <span id="mic-permission-pill" class="status-pill idle">Mic permission: unknown</span>
           </div>
-          <button id="record-btn" class="record-button" type="button">
-            <span class="record-button-main">Hold To Record</span>
-            <span class="record-button-sub">Press down to start, release to submit</span>
-          </button>
-          <p class="recorder-hint">Supports mouse, touch, and keyboard. Release the button to trigger STT, translation, and TTS automatically.</p>
+          <div class="recording-stage">
+            <button id="record-btn" class="record-button" type="button">
+              <span class="record-button-shell">
+                <span class="record-button-icon-wrap" aria-hidden="true">
+                  <span class="record-button-pulse"></span>
+                  <span class="record-button-icon">
+                    <span class="record-button-mic"></span>
+                  </span>
+                </span>
+                <span class="record-button-copy">
+                  <span class="record-button-main">Hold To Record</span>
+                </span>
+              </span>
+            </button>
+            <div id="vu-meter" class="vu-meter" aria-hidden="true">
+              <div class="vu-meter-frame">
+                <div class="vu-meter-head">vu meter</div>
+                <div class="vu-meter-panel">
+                  <div class="vu-meter-scale vu-meter-scale-left">
+                    <span>+8</span>
+                    <span>+6</span>
+                    <span>+4</span>
+                    <span>+2</span>
+                    <span>0</span>
+                    <span>-2</span>
+                    <span>-4</span>
+                    <span>-6</span>
+                    <span>-8</span>
+                    <span>-10</span>
+                    <span>-12</span>
+                    <span>-16</span>
+                  </div>
+                  <div class="vu-meter-columns">
+                    <div id="vu-meter-column-left" class="vu-meter-column" aria-hidden="true"></div>
+                    <div id="vu-meter-column-right" class="vu-meter-column" aria-hidden="true"></div>
+                  </div>
+                  <div class="vu-meter-scale vu-meter-scale-right">
+                    <span>+8</span>
+                    <span>+6</span>
+                    <span>+4</span>
+                    <span>+2</span>
+                    <span>0</span>
+                    <span>-2</span>
+                    <span>-4</span>
+                    <span>-6</span>
+                    <span>-8</span>
+                    <span>-10</span>
+                    <span>-12</span>
+                    <span>-16</span>
+                  </div>
+                </div>
+                <div class="vu-meter-plate">Transmitter</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="results">
@@ -280,41 +378,11 @@
         <div class="section-head">
           <h2>Activity Log</h2>
           <div class="section-actions">
-            <button id="toggle-log-btn" class="ghost-button" type="button" aria-expanded="true" aria-controls="log-content">Hide</button>
             <button id="clear-log-btn" class="text-button" type="button">Clear</button>
           </div>
         </div>
         <div id="log-content" class="log-content">
           <div id="log-output" class="log-output" aria-live="polite"></div>
-          <div class="trend-panel">
-            <div class="result-head trend-head">
-              <h3>Total API Time Trend</h3>
-              <div id="perf-view-switcher" class="view-switcher" role="tablist" aria-label="Performance view">
-                <button class="view-switcher-btn active" type="button" data-view="total">Total</button>
-                <button class="view-switcher-btn" type="button" data-view="stt">STT</button>
-                <button class="view-switcher-btn" type="button" data-view="translation">Translation</button>
-                <button class="view-switcher-btn" type="button" data-view="tts">TTS</button>
-              </div>
-            </div>
-            <svg id="perf-trend-chart" class="trend-chart" viewBox="0 0 640 220" role="img" aria-label="Total API response time trend"></svg>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel history-panel">
-        <div class="section-head">
-          <h2>History</h2>
-          <div class="section-actions">
-            <button id="toggle-history-btn" class="ghost-button" type="button" aria-expanded="true" aria-controls="history-content">Hide</button>
-            <div id="history-pagination-top" class="history-pagination history-pagination-top"></div>
-            <button id="refresh-history-btn" class="ghost-button" type="button">Refresh</button>
-            <button id="clear-history-btn" class="ghost-button danger" type="button">Clear All</button>
-          </div>
-        </div>
-        <div id="history-content" class="history-content">
-          <p class="history-copy">Recordings, transcripts, translations, and a small settings summary are stored in this browser's IndexedDB.</p>
-          <div id="history-list" class="history-list"></div>
-          <div id="history-pagination" class="history-pagination"></div>
         </div>
       </section>
     </main>
@@ -340,7 +408,6 @@
           <p class="history-translation"></p>
         </div>
       </div>
-      <div class="history-meta"></div>
       <div class="history-performance"></div>
       <div class="history-api"></div>
       <div class="history-audio-group">
