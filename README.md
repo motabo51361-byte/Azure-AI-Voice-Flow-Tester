@@ -42,9 +42,46 @@ http://localhost:8080
 
 ### Azure Blob Static Website
 
-1. Create a Storage Account
-2. Enable Static Website
-3. Upload `index.html`, `styles.css`, and `app.js` into `$web`
+1. Create or open a Storage Account in Azure Portal
+2. Open `Static website`
+3. Set `Static website` to `Enabled`
+4. Set `Index document name` to `index.html`
+5. Set `Error document path` to `index.html` for now
+6. Save
+7. Azure will create a `$web` container and show the primary website endpoint
+
+Official docs:
+
+- [Host a static website in Azure Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-static-website-how-to?tabs=azure-portal)
+- [Use GitHub Actions to deploy a static site to Azure Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-static-site-github-actions)
+
+### Azure Blob Static Website With GitHub Actions
+
+This repository now includes [.github/workflows/deploy-azure-blob.yml](./.github/workflows/deploy-azure-blob.yml).
+
+To turn it on:
+
+1. Create a Microsoft Entra app registration for GitHub Actions access
+2. Add a federated credential for your GitHub repository and branch
+3. Grant that app at least `Storage Blob Data Contributor` on the target storage account
+4. In GitHub repository `Settings > Secrets and variables > Actions`, add these secrets:
+   - `AZURE_CLIENT_ID`
+   - `AZURE_TENANT_ID`
+   - `AZURE_SUBSCRIPTION_ID`
+5. In GitHub repository `Settings > Secrets and variables > Actions > Variables`, add:
+   - `AZURE_STORAGE_ACCOUNT`
+6. Push to `main`
+
+The Azure workflow will upload these files into the `$web` container:
+
+- `index.html`
+- `app.js`
+- `styles.css`
+- `app-icon.png`
+- `.nojekyll` if present
+- `404.html` if present
+
+After the first successful run, open the static website endpoint shown in Azure Portal.
 
 ### GitHub Pages
 

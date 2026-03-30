@@ -1,0 +1,90 @@
+name: Deploy Static Site To Azure Blob Static Website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: azure-blob-static-website
+  cancel-in-progress: true
+
+env:
+  AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check configuration
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        shell: bash
+        run: |
+          missing=0
+          [ -n "$AZURE_CLIENT_ID" ] || { echo "::error::Missing GitHub secret: AZURE_CLIENT_ID"; missing=1; }
+          [ -n "$AZURE_TENANT_ID" ] || { echo "::error::Missing GitHub secret: AZURE_TENANT_ID"; missing=1; }
+          [ -n "$AZURE_SUBSCRIPTION_ID" ] || { echo "::error::Missing GitHub secret: AZURE_SUBSCRIPTION_ID"; missing=1; }
+
+          if [ -z "${AZURE_STORAGE_ACCOUNT}" ]; then
+            echo "::error::Missing GitHub repository variable: AZURE_STORAGE_ACCOUNT"
+            missing=1
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Prepare site package
+        shell: bash
+        run: |
+          mkdir -p release
+          cp index.html release/
+          cp app.js release/
+          cp styles.css release/
+          cp app-icon.png release/
+          if [ -f ".nojekyll" ]; then cp .nojekyll release/; fi
+          if [ -f "404.html" ]; then cp 404.html release/; fi
+
+      - name: Clear existing blob website files
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az storage blob delete-batch \
+              --account-name "$AZURE_STORAGE_ACCOUNT" \
+              --auth-mode login \
+              --source '$web' \
+              --pattern '*'
+
+      - name: Upload site files to $web
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az storage blob upload-batch \
+              --account-name "$AZURE_STORAGE_ACCOUNT" \
+              --auth-mode login \
+              --destination '$web' \
+              --source release \
+              --overwrite true
+
+      - name: Azure logout
+        run: az logout
+        if: always()
