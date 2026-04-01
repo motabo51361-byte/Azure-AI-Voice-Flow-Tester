@@ -68,6 +68,8 @@ const defaultProfileSettings = {
   sttLocale: "ja-JP",
   sttLocalePreset: "ja-JP",
   sttLocaleCustom: "",
+  useCustomSpeech: false,
+  customSpeechEndpointId: "",
   translatorEndpoint: "https://api.cognitive.microsofttranslator.com/",
   translatorKey: "",
   translatorRegion: "japaneast",
@@ -168,7 +170,9 @@ const elements = {
   translatorRegionCustom: document.querySelector('[name="translatorRegionCustom"]'),
   translatorFromCustomWrap: document.querySelector("#translator-from-custom-wrap"),
   translatorToCustomWrap: document.querySelector("#translator-to-custom-wrap"),
+  translatorCategoryWrap: document.querySelector("#translator-category-wrap"),
   sttLocaleCustomWrap: document.querySelector("#stt-locale-custom-wrap"),
+  customSpeechEndpointIdWrap: document.querySelector("#custom-speech-endpoint-id-wrap"),
   translatorRegionCustomWrap: document.querySelector("#translator-region-custom-wrap"),
   ttsLanguagePreset: document.querySelector('[name="ttsLanguagePreset"]'),
   ttsLanguageCustom: document.querySelector('[name="ttsLanguageCustom"]'),
@@ -439,7 +443,9 @@ function handleSettingsChanged() {
 
 function updateConditionalFields() {
   toggleConditionalField(elements.sttLocaleCustomWrap, elements.sttLocalePreset.value === CUSTOM_OPTION);
+  toggleConditionalField(elements.customSpeechEndpointIdWrap, Boolean(elements.settingsForm.elements.namedItem("useCustomSpeech").checked));
   toggleConditionalField(elements.translatorRegionCustomWrap, elements.translatorRegionPreset.value === CUSTOM_OPTION);
+  toggleConditionalField(elements.translatorCategoryWrap, Boolean(elements.settingsForm.elements.namedItem("useCustomTranslator").checked));
   toggleConditionalField(elements.translatorFromCustomWrap, elements.translatorFromPreset.value === CUSTOM_OPTION);
   toggleConditionalField(elements.translatorToCustomWrap, elements.translatorToPreset.value === CUSTOM_OPTION);
   toggleConditionalField(elements.ttsLanguageCustomWrap, elements.ttsLanguagePreset.value === CUSTOM_OPTION);
@@ -472,6 +478,8 @@ function collectProfileFromForm() {
     sttLocale,
     sttLocalePreset: String(data.get("sttLocalePreset") || ""),
     sttLocaleCustom: String(data.get("sttLocaleCustom") || "").trim(),
+    useCustomSpeech: Boolean(elements.settingsForm.elements.namedItem("useCustomSpeech").checked),
+    customSpeechEndpointId: String(data.get("customSpeechEndpointId") || "").trim(),
     translatorEndpoint: sanitizeUrl(data.get("translatorEndpoint")),
     translatorKey: String(data.get("translatorKey") || "").trim(),
     translatorRegion,
@@ -786,7 +794,11 @@ async function stopSpeechRecognition(discardTranscript) {
 
 function createSpeechConfig(settings, sdk) {
   const endpoint = normalizeSpeechSdkEndpoint(settings.sttEndpoint);
-  return sdk.SpeechConfig.fromEndpoint(new URL(endpoint), settings.speechKey);
+  const speechConfig = sdk.SpeechConfig.fromEndpoint(new URL(endpoint), settings.speechKey);
+  if (settings.useCustomSpeech && settings.customSpeechEndpointId) {
+    speechConfig.endpointId = settings.customSpeechEndpointId;
+  }
+  return speechConfig;
 }
 
 function normalizeSpeechSdkEndpoint(endpoint) {
@@ -968,6 +980,7 @@ async function processRecording(audioBlob, transcript) {
     params: {
       recognitionLanguage: settings.sttLocale,
       mode: "continuous microphone recognition while button is held",
+      endpointId: settings.useCustomSpeech ? settings.customSpeechEndpointId : "",
     },
   });
   const detectedLocale = settings.sttLocale || settings.translatorFrom;
@@ -1546,6 +1559,7 @@ function validateBeforeRecording(settings) {
   if (!settings.sttEndpoint) missing.push("STT Endpoint");
   if (!settings.speechKey) missing.push("Speech Key");
   if (!settings.sttLocale) missing.push("STT Locale");
+  if (settings.useCustomSpeech && !settings.customSpeechEndpointId) missing.push("Custom Speech Endpoint ID");
   if (!settings.translatorEndpoint) missing.push("Translator Endpoint");
   if (!settings.translatorKey) missing.push("Translator Key");
   if (!settings.translatorFrom) missing.push("Translator From");

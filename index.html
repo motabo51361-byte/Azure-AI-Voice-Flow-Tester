@@ -143,8 +143,20 @@
               <span>Custom Locale</span>
               <input name="sttLocaleCustom" type="text" placeholder="Enter custom locale">
             </label>
+            <label class="checkbox">
+              <input name="useCustomSpeech" type="checkbox">
+              <span>Use Custom Speech</span>
+            </label>
+            <label id="custom-speech-endpoint-id-wrap" class="conditional-field is-hidden">
+              <span>Custom Endpoint ID</span>
+              <input name="customSpeechEndpointId" type="text" placeholder="Enter Custom Speech endpoint ID">
+              <small class="field-help">
+                Use the deployed Custom Speech endpoint ID for recognition.
+              </small>
+            </label>
             <div class="field-links">
               <a class="doc-link" href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=stt-tts" target="_blank" rel="noreferrer">Speech locale docs</a>
+              <a class="doc-link" href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-custom-speech-deploy-model" target="_blank" rel="noreferrer">Custom Speech docs</a>
             </div>
           </fieldset>
 
@@ -176,9 +188,12 @@
               <input name="useCustomTranslator" type="checkbox">
               <span>Use Custom Translator</span>
             </label>
-            <label>
+            <label id="translator-category-wrap" class="conditional-field is-hidden">
               <span>Category ID</span>
               <input name="translatorCategory" type="text" placeholder="Custom Translator category">
+              <small class="field-help">
+                Use the deployed Custom Translator category ID for translation.
+              </small>
             </label>
             <div class="grid-two">
               <label>
