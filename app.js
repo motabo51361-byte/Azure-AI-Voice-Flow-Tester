@@ -218,6 +218,10 @@ let recorderState = {
   meterData: null,
   meterAnimationFrame: 0,
   meterLevel: 0,
+  uiAudioContext: null,
+  pressPointerId: null,
+  isEndingPress: false,
+  pendingPressStart: false,
 };
 
 boot();
@@ -635,15 +639,21 @@ function applyTheme(themeName = getActiveProfile()?.theme || "light") {
 
 async function beginRecording() {
   if (recorderState.activeRecordingPromise) return;
+  recorderState.pendingPressStart = true;
   triggerHapticFeedback(12);
+  playRadioClick("press");
   const settings = getSettings();
   const missing = validateBeforeRecording(settings);
   if (missing.length > 0) {
+    recorderState.isPressing = false;
+    recorderState.pendingPressStart = false;
     setStatus("error", "Missing Settings");
     log(`Cannot start recording. Missing: ${missing.join(", ")}`);
     return;
   }
   if (!navigator.mediaDevices?.getUserMedia) {
+    recorderState.isPressing = false;
+    recorderState.pendingPressStart = false;
     setStatus("error", "Mic Not Supported");
     log("This browser does not support getUserMedia.");
     return;
@@ -652,32 +662,55 @@ async function beginRecording() {
     resetPerformanceSummary();
     await startSpeechRecognition(settings);
     const stream = await getRecordingStream();
-    const mimeType = getSupportedMimeType();
-    const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-    recorderState.stream = stream;
-    recorderState.mediaRecorder = mediaRecorder;
-    recorderState.chunks = [];
-    recorderState.recordedMimeType = mediaRecorder.mimeType || mimeType || "audio/webm";
-    recorderState.isPressing = true;
-    mediaRecorder.addEventListener("dataavailable", (event) => {
-      if (event.data && event.data.size > 0) recorderState.chunks.push(event.data);
-    });
-    mediaRecorder.start();
-    elements.recordBtn.classList.add("recording");
-    elements.vuMeter.classList.add("is-recording");
-    setStatus("processing", "Recording");
-    log("Recording started.");
-  } catch (error) {
-    await stopSpeechRecognition(true);
-    setStatus("error", "Mic Error");
-    log(`Microphone access failed: ${formatError(error)}`);
+      const mimeType = getSupportedMimeType();
+      const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      recorderState.stream = stream;
+      recorderState.mediaRecorder = mediaRecorder;
+      recorderState.chunks = [];
+      recorderState.recordedMimeType = mediaRecorder.mimeType || mimeType || "audio/webm";
+      if (!recorderState.isPressing) {
+        stopStream(stream);
+        recorderState.stream = null;
+        recorderState.mediaRecorder = null;
+        recorderState.chunks = [];
+        recorderState.recordedMimeType = "";
+        recorderState.pendingPressStart = false;
+        await stopSpeechRecognition(true);
+        setStatus("idle", "Ready");
+        return;
+      }
+      mediaRecorder.addEventListener("dataavailable", (event) => {
+        if (event.data && event.data.size > 0) recorderState.chunks.push(event.data);
+      });
+      mediaRecorder.start();
+      recorderState.pendingPressStart = false;
+      elements.recordBtn.classList.add("recording");
+      elements.vuMeter.classList.add("is-recording");
+      setStatus("processing", "Recording");
+      log("Recording started.");
+    } catch (error) {
+      recorderState.isPressing = false;
+      recorderState.pendingPressStart = false;
+      await stopSpeechRecognition(true);
+      setStatus("error", "Mic Error");
+      log(`Microphone access failed: ${formatError(error)}`);
+    }
   }
-}
 
 async function finishRecording() {
+  if (recorderState.pendingPressStart && (!recorderState.mediaRecorder || recorderState.mediaRecorder.state === "inactive")) {
+    recorderState.isPressing = false;
+    recorderState.pendingPressStart = false;
+    await stopSpeechRecognition(true);
+    cleanupRecorder();
+    setStatus("idle", "Ready");
+    return;
+  }
   if (!recorderState.mediaRecorder || recorderState.mediaRecorder.state === "inactive") return;
   triggerHapticFeedback(16);
+  playRadioClick("release");
   recorderState.isPressing = false;
+  recorderState.pendingPressStart = false;
   recorderState.releaseStartedAt = performance.now();
   setStatus("processing", "Processing");
   log("Recording stopped. Running STT, translation, and TTS.");
@@ -1366,6 +1399,95 @@ function triggerHapticFeedback(duration = 10) {
   }
 }
 
+function playRadioClick(type = "press") {
+  try {
+    const context = getUiAudioContext();
+    if (!context) return;
+    if (context.state === "suspended") {
+      context.resume().catch(() => {});
+    }
+
+    const now = context.currentTime + 0.002;
+    const isRelease = type === "release";
+    const masterGain = context.createGain();
+    const filter = context.createBiquadFilter();
+    const compressor = context.createDynamicsCompressor();
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(isRelease ? 980 : 860, now);
+    filter.Q.value = isRelease ? 1.9 : 1.7;
+
+    compressor.threshold.setValueAtTime(-28, now);
+    compressor.knee.setValueAtTime(24, now);
+    compressor.ratio.setValueAtTime(7, now);
+    compressor.attack.setValueAtTime(0.002, now);
+    compressor.release.setValueAtTime(0.08, now);
+
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.gain.exponentialRampToValueAtTime(isRelease ? 0.11 : 0.16, now + 0.003);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + (isRelease ? 0.085 : 0.16));
+
+    filter.connect(compressor);
+    compressor.connect(masterGain);
+    masterGain.connect(context.destination);
+
+    const toneA = context.createOscillator();
+    toneA.type = isRelease ? "square" : "sawtooth";
+    toneA.frequency.setValueAtTime(isRelease ? 760 : 620, now);
+    toneA.frequency.exponentialRampToValueAtTime(isRelease ? 560 : 430, now + (isRelease ? 0.05 : 0.11));
+    toneA.connect(filter);
+    toneA.start(now);
+    toneA.stop(now + (isRelease ? 0.068 : 0.128));
+
+    const toneB = context.createOscillator();
+    toneB.type = "square";
+    toneB.frequency.setValueAtTime(isRelease ? 1140 : 930, now + 0.004);
+    toneB.frequency.exponentialRampToValueAtTime(isRelease ? 800 : 640, now + (isRelease ? 0.052 : 0.11));
+    toneB.connect(filter);
+    toneB.start(now + 0.005);
+    toneB.stop(now + (isRelease ? 0.062 : 0.118));
+
+    const thump = context.createOscillator();
+    const thumpGain = context.createGain();
+    thump.type = "sine";
+    thump.frequency.setValueAtTime(isRelease ? 180 : 150, now);
+    thump.frequency.exponentialRampToValueAtTime(isRelease ? 110 : 90, now + (isRelease ? 0.045 : 0.06));
+    thumpGain.gain.setValueAtTime(isRelease ? 0.05 : 0.08, now);
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + (isRelease ? 0.045 : 0.06));
+    thump.connect(thumpGain);
+    thumpGain.connect(filter);
+    thump.start(now);
+    thump.stop(now + (isRelease ? 0.05 : 0.065));
+
+    const noise = context.createBufferSource();
+    const noiseBuffer = context.createBuffer(1, Math.max(1, Math.floor(context.sampleRate * 0.03)), context.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i += 1) {
+        noiseData[i] = (Math.random() * 2 - 1) * (isRelease ? 0.14 : 0.2);
+    }
+    noise.buffer = noiseBuffer;
+
+    const noiseGain = context.createGain();
+    noiseGain.gain.setValueAtTime(isRelease ? 0.03 : 0.042, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + (isRelease ? 0.034 : 0.055));
+    noise.connect(noiseGain);
+    noiseGain.connect(filter);
+    noise.start(now);
+    noise.stop(now + (isRelease ? 0.034 : 0.055));
+  } catch {
+    // Ignore unsupported audio feedback or browser autoplay restrictions.
+  }
+}
+
+function getUiAudioContext() {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) return null;
+  if (!recorderState.uiAudioContext) {
+    recorderState.uiAudioContext = new AudioContextCtor();
+  }
+  return recorderState.uiAudioContext;
+}
+
 function resetPerformanceSummary() {
   elements.perfStt.textContent = "-- ms";
   elements.perfTranslation.textContent = "-- ms";
@@ -1664,14 +1786,35 @@ function extractTranslation(response) {
 function bindPressAndHold(element, callbacks) {
   const start = async (event) => {
     event.preventDefault();
-    if (recorderState.isPressing) return;
+    if (recorderState.isPressing || recorderState.pendingPressStart) return;
+    recorderState.isPressing = true;
+    recorderState.pressPointerId = typeof event.pointerId === "number" ? event.pointerId : null;
     if (typeof event.pointerId === "number" && element.setPointerCapture) element.setPointerCapture(event.pointerId);
     await callbacks.onPressStart();
   };
   const end = async (event) => {
-    event.preventDefault();
+    if (event?.preventDefault) event.preventDefault();
+    if (recorderState.isEndingPress) return;
     if (!recorderState.isPressing && !recorderState.mediaRecorder) return;
-    await callbacks.onPressEnd();
+    recorderState.isEndingPress = true;
+    if (
+      recorderState.pressPointerId !== null &&
+      element.releasePointerCapture &&
+      element.hasPointerCapture &&
+      element.hasPointerCapture(recorderState.pressPointerId)
+    ) {
+      element.releasePointerCapture(recorderState.pressPointerId);
+    }
+    recorderState.pressPointerId = null;
+    try {
+      await callbacks.onPressEnd();
+    } finally {
+      recorderState.isEndingPress = false;
+    }
+  };
+  const endIfActive = async (event) => {
+    if (!recorderState.isPressing && !recorderState.mediaRecorder) return;
+    await end(event);
   };
   element.addEventListener("pointerdown", start);
   element.addEventListener("pointerup", end);
@@ -1680,6 +1823,12 @@ function bindPressAndHold(element, callbacks) {
   });
   element.addEventListener("pointercancel", (event) => {
     if (recorderState.isPressing) end(event);
+  });
+  window.addEventListener("pointerup", endIfActive);
+  window.addEventListener("mouseup", endIfActive);
+  window.addEventListener("blur", endIfActive);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) endIfActive();
   });
   element.addEventListener("keydown", async (event) => {
     if ((event.code === "Space" || event.code === "Enter") && !recorderState.isPressing) await start(event);
