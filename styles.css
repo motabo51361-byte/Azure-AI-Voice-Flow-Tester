@@ -514,7 +514,8 @@ select {
 
 .hero-icon {
   width: 152px;
-  height: 152px;
+  height: auto;
+  max-height: 152px;
   filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.12));
 }
 
@@ -2350,7 +2351,8 @@ body[data-theme="dark"] .recorder-hint {
 
   .hero-icon {
     width: 108px;
-    height: 108px;
+    height: auto;
+    max-height: 108px;
   }
 
   .grid-two,
