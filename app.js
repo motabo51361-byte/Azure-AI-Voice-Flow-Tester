@@ -119,6 +119,8 @@ const elements = {
   historyDrawer: document.querySelector("#history-drawer"),
   historyBackdrop: document.querySelector("#history-backdrop"),
   settingsForm: document.querySelector("#settings-form"),
+  quickCustomSpeechBtn: document.querySelector("#quick-custom-speech-btn"),
+  quickCustomTranslatorBtn: document.querySelector("#quick-custom-translator-btn"),
   openSettingsFab: document.querySelector("#open-settings-fab"),
   quickProfileTabs: Array.from(document.querySelectorAll(".profile-quick-tab")),
   toggleSettingsBtn: document.querySelector("#toggle-settings-btn"),
@@ -264,6 +266,8 @@ function wireEvents() {
   elements.quickProfileTabs.forEach((button) => {
     button.addEventListener("click", () => switchProfile(button.dataset.profileId));
   });
+  elements.quickCustomSpeechBtn.addEventListener("click", () => toggleQuickServiceOption("useCustomSpeech"));
+  elements.quickCustomTranslatorBtn.addEventListener("click", () => toggleQuickServiceOption("useCustomTranslator"));
   elements.ttsLanguagePreset.addEventListener("change", () => {
     renderVoiceOptions(resolveCustomizableValue(elements.ttsLanguagePreset.value, elements.ttsLanguageCustom.value));
     persistActiveProfileDraft();
@@ -390,6 +394,7 @@ function hydrateProfile() {
   ensureTranslatorPresetMatchesCustom("translatorFromPreset", "translatorFromCustom");
   ensureTranslatorPresetMatchesCustom("translatorToPreset", "translatorToCustom");
   renderProfileTabs();
+  renderQuickServiceToggles();
   renderTranslatorRegionOptions(profile.translatorRegion || defaultProfileSettings.translatorRegion);
   renderVoiceLocaleOptions();
   renderVoiceOptions(profile.ttsLanguage);
@@ -461,6 +466,27 @@ function persistActiveProfileDraft() {
   appState.profiles[appState.activeProfileId] = normalizeProfileSettings(collectProfileFromForm());
   saveProfiles();
   renderProfileTabs();
+  renderQuickServiceToggles();
+}
+
+function toggleQuickServiceOption(fieldName) {
+  const field = elements.settingsForm.elements.namedItem(fieldName);
+  if (!field) return;
+  field.checked = !field.checked;
+  updateConditionalFields();
+  persistActiveProfileDraft();
+}
+
+function renderQuickServiceToggles() {
+  renderQuickServiceToggle(elements.quickCustomSpeechBtn, "useCustomSpeech", "Custom Speech");
+  renderQuickServiceToggle(elements.quickCustomTranslatorBtn, "useCustomTranslator", "Custom Translator");
+}
+
+function renderQuickServiceToggle(button, fieldName, label) {
+  const enabled = Boolean(getActiveProfile()[fieldName]);
+  button.classList.toggle("is-on", enabled);
+  button.setAttribute("aria-pressed", String(enabled));
+  button.setAttribute("aria-label", `${label}: ${enabled ? "On" : "Off"}`);
 }
 
 function collectProfileFromForm() {
@@ -973,10 +999,11 @@ async function processRecording(audioBlob, transcript) {
   elements.ttsPlayer.load();
 
   const sttCompletedAt = performance.now();
+  const sttUrl = normalizeSpeechSdkEndpoint(settings.sttEndpoint);
   apiCalls.push({
     service: "Speech-to-Text",
     method: "POST",
-    url: normalizeSpeechSdkEndpoint(settings.sttEndpoint),
+    url: sttUrl,
     params: {
       recognitionLanguage: settings.sttLocale,
       mode: "continuous microphone recognition while button is held",
@@ -1008,9 +1035,9 @@ async function processRecording(audioBlob, transcript) {
   log("TTS audio generated.");
   updatePerformanceSummary(performanceStats);
 
-  apiCalls[0].durationMs = performanceStats.sttMs;
-  apiCalls[1].durationMs = performanceStats.translationMs;
-  apiCalls[2].durationMs = performanceStats.ttsMs;
+  setApiCallDuration(apiCalls, "Speech-to-Text", "POST", performanceStats.sttMs);
+  setApiCallDuration(apiCalls, "Translator", "POST", performanceStats.translationMs);
+  setApiCallDuration(apiCalls, "Text-to-Speech", "POST", performanceStats.ttsMs);
 
   const sequence = await getNextHistorySequence();
   await saveHistoryEntry({
@@ -1092,6 +1119,13 @@ async function synthesizeSpeech(text, settings, apiCalls) {
   });
   if (!response.ok) throw await createHttpError(response, "Text-to-Speech");
   return await response.blob();
+}
+
+function setApiCallDuration(apiCalls, service, method, durationMs) {
+  const targetCall = apiCalls.find((call) => call.service === service && call.method === method);
+  if (targetCall) {
+    targetCall.durationMs = durationMs;
+  }
 }
 
 async function handleLoadVoices() {
@@ -1181,15 +1215,25 @@ async function renderHistory() {
           context.textContent = [`Voice: ${entry.ttsVoice || "-"}`, `Output: ${entry.ttsAudioMimeType || "-"}`].join(" | ");
         }
         const url = document.createElement("p");
+        url.className = "api-call-url";
         url.textContent = call.url;
         const pre = document.createElement("pre");
         pre.textContent = JSON.stringify(call.params, null, 2);
         if (typeof call.durationMs === "number") {
           const duration = document.createElement("p");
+          duration.className = "api-call-duration";
           duration.textContent = `Duration: ${formatMilliseconds(call.durationMs)}`;
-          card.append(heading, context, url, duration, pre);
+          card.append(heading, context);
+          if (call.url) {
+            card.appendChild(url);
+          }
+          card.append(duration, pre);
         } else {
-          card.append(heading, context, url, pre);
+          card.append(heading, context);
+          if (call.url) {
+            card.appendChild(url);
+          }
+          card.appendChild(pre);
         }
         apiWrap.appendChild(card);
       });

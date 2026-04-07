@@ -333,6 +333,52 @@ select {
   min-width: 0;
 }
 
+.service-quick-switch {
+  display: inline-flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.service-quick-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  min-height: 34px;
+  padding: 3px 7px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.service-quick-toggle.is-on {
+  background: rgba(240, 183, 109, 0.2);
+  border-color: rgba(199, 75, 50, 0.28);
+  color: var(--primary-deep);
+}
+
+.service-quick-toggle:active {
+  transform: translateY(1px);
+}
+
+.service-quick-icon {
+  font-size: 0.68rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.service-quick-text {
+  line-height: 0.88;
+}
+
 .settings-fab-icon {
   display: inline-flex;
   align-items: center;
@@ -347,7 +393,9 @@ select {
 }
 
 .profile-quick-tab {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 34px;
   padding: 5px 8px;
   border-radius: 9px;
   border: 1px solid transparent;
@@ -1663,7 +1711,7 @@ body[data-theme="dark"] .vu-meter {
 .history-item {
   border: 1px solid var(--line);
   border-radius: 22px;
-  padding: 18px;
+  padding: 14px;
   background: var(--panel-strong);
   min-width: 0;
 }
@@ -1806,8 +1854,8 @@ audio {
 .history-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin: 14px 0;
+  gap: 12px;
+  margin: 10px 0 12px;
 }
 
 .history-audio-group {
@@ -1817,12 +1865,12 @@ audio {
 }
 
 .history-item h4 {
-  margin-bottom: 8px;
-  font-size: 0.98rem;
+  margin-bottom: 6px;
+  font-size: 0.92rem;
 }
 
 .history-title {
-  font-size: 1.18rem;
+  font-size: 1.06rem;
   letter-spacing: 0.01em;
 }
 
@@ -1835,26 +1883,27 @@ audio {
 
 .history-item p {
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.5;
   white-space: pre-wrap;
+  font-size: 0.92rem;
 }
 
 .history-performance {
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border-radius: 16px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
   border: 1px solid rgba(92, 73, 53, 0.08);
   background: rgba(244, 239, 231, 0.6);
   color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .history-performance-total {
   display: inline-flex;
   align-items: center;
-  margin-top: 8px;
-  padding: 6px 10px;
+  margin-top: 6px;
+  padding: 5px 9px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   color: var(--primary-deep);
@@ -1864,14 +1913,14 @@ audio {
 
 .history-api {
   display: grid;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
   min-width: 0;
 }
 
 .api-call {
-  padding: 12px;
-  border-radius: 16px;
+  padding: 10px;
+  border-radius: 14px;
   border: 1px solid rgba(92, 73, 53, 0.08);
   background: rgba(244, 239, 231, 0.72);
   min-width: 0;
@@ -1879,14 +1928,14 @@ audio {
 }
 
 .api-call h5 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-family: "Space Grotesk", sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .api-call-context {
-  margin-bottom: 8px !important;
-  font-size: 0.84rem;
+  margin-bottom: 6px !important;
+  font-size: 0.78rem;
   opacity: 0.88;
 }
 
@@ -1898,17 +1947,30 @@ audio {
 }
 
 .api-call pre {
-  margin-top: 8px;
+  margin-top: 6px;
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
   overflow-x: auto;
 }
 
-.api-call p {
+.api-call-url,
+.api-call-duration {
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.api-call-url {
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.api-call-duration {
+  margin-top: 4px !important;
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--text) !important;
 }
 
 .ghost-button,
@@ -2220,6 +2282,21 @@ body[data-theme="dark"] .recorder-hint {
 
   .settings-fab {
     padding: 7px;
+  }
+
+  .service-quick-switch {
+    gap: 3px;
+  }
+
+  .service-quick-toggle {
+    min-height: 34px;
+    padding: 3px 6px;
+    font-size: 0.62rem;
+  }
+
+  .service-quick-text {
+    display: inline;
+    line-height: 0.86;
   }
 
   .settings-quick-switch {
