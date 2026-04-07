@@ -1532,26 +1532,36 @@ function renderPerformanceTrend(entries) {
       await jumpToHistorySequence(point.sequence, true);
     });
     svg.appendChild(circle);
-
-    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", `${point.x}`);
-    label.setAttribute("y", `${height - 14}`);
-    label.setAttribute("text-anchor", "middle");
-    label.setAttribute("font-size", "11");
-    label.setAttribute("fill", axisColor);
-    label.setAttribute("opacity", "0.72");
-    label.textContent = `#${point.sequence}`;
-    svg.appendChild(label);
   });
 
   const maxLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  maxLabel.setAttribute("x", "8");
-  maxLabel.setAttribute("y", `${padding.top + 4}`);
+  maxLabel.setAttribute("x", "2");
+  maxLabel.setAttribute("y", `${padding.top - 8}`);
   maxLabel.setAttribute("font-size", "11");
   maxLabel.setAttribute("fill", axisColor);
   maxLabel.setAttribute("opacity", "0.72");
   maxLabel.textContent = formatMilliseconds(maxValue);
   svg.appendChild(maxLabel);
+
+  const oldestLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  oldestLabel.setAttribute("x", `${padding.left}`);
+  oldestLabel.setAttribute("y", `${height - 15}`);
+  oldestLabel.setAttribute("font-size", "10");
+  oldestLabel.setAttribute("text-anchor", "start");
+  oldestLabel.setAttribute("fill", axisColor);
+  oldestLabel.setAttribute("opacity", "0.58");
+  oldestLabel.textContent = "Oldest";
+  svg.appendChild(oldestLabel);
+
+  const latestLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  latestLabel.setAttribute("x", `${width - padding.right}`);
+  latestLabel.setAttribute("y", `${height - 15}`);
+  latestLabel.setAttribute("font-size", "10");
+  latestLabel.setAttribute("text-anchor", "end");
+  latestLabel.setAttribute("fill", axisColor);
+  latestLabel.setAttribute("opacity", "0.58");
+  latestLabel.textContent = "Latest";
+  svg.appendChild(latestLabel);
 }
 
 function getPerformanceMetric(stats = {}, view = "total") {
