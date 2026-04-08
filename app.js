@@ -5,6 +5,8 @@ const DB_VERSION = 1;
 const HISTORY_STORE = "history";
 const MAX_LOG_LINES = 40;
 const CUSTOM_OPTION = "__custom__";
+const APP_MODE_FULL = "full";
+const APP_MODE_TEXT = "text";
 const HISTORY_PAGE_SIZE = 5;
 const HISTORY_MAX_ITEMS = 50;
 
@@ -62,6 +64,7 @@ const DEFAULT_VOICE_NAMES = DEFAULT_VOICES.map((voice) => voice.shortName);
 
 const defaultProfileSettings = {
   profileName: "Profile 1",
+  appMode: APP_MODE_FULL,
   theme: "silvermetal",
   sttEndpoint: "https://japaneast.stt.speech.microsoft.com",
   speechKey: "",
@@ -128,14 +131,23 @@ const elements = {
   settingsDrawer: document.querySelector("#settings-drawer"),
   settingsBackdrop: document.querySelector("#settings-backdrop"),
   themeSelect: document.querySelector("#theme-select"),
+  modeQuickTabs: Array.from(document.querySelectorAll(".mode-quick-tab")),
   profileName: document.querySelector("#profile-name"),
   profileTabs: Array.from(document.querySelectorAll(".profile-tab")),
   passwordToggles: Array.from(document.querySelectorAll(".password-toggle")),
+  sttSettingsFieldset: document.querySelector("#stt-settings-fieldset"),
+  voiceRecorderPanel: document.querySelector("#voice-recorder-panel"),
+  textInputPanel: document.querySelector("#text-input-panel"),
+  sourceTextInput: document.querySelector("#source-text-input"),
+  runTextFlowBtn: document.querySelector("#run-text-flow-btn"),
+  textModeStatusPill: document.querySelector("#text-mode-status-pill"),
   recordBtn: document.querySelector("#record-btn"),
+  sttResultCard: document.querySelector("#stt-result-card"),
   sttText: document.querySelector("#stt-text"),
   translatedText: document.querySelector("#translated-text"),
   ttsPlayer: document.querySelector("#tts-player"),
   statusPill: document.querySelector("#status-pill"),
+  perfCardStt: document.querySelector("#perf-card-stt"),
   perfStt: document.querySelector("#perf-stt"),
   perfTranslation: document.querySelector("#perf-translation"),
   perfTts: document.querySelector("#perf-tts"),
@@ -239,7 +251,7 @@ async function boot() {
   setVuMeterLevel(0);
   await initMicrophonePermissionState();
   await renderHistory();
-  log("App ready. Fill in Azure settings and hold the record button.");
+  log(`App ready. ${getActiveProfile().appMode === APP_MODE_TEXT ? "Type text to test Translator and TTS." : "Fill in Azure settings and hold the record button."}`);
 }
 
 function wireEvents() {
@@ -270,8 +282,12 @@ function wireEvents() {
   elements.quickProfileTabs.forEach((button) => {
     button.addEventListener("click", () => switchProfile(button.dataset.profileId));
   });
+  elements.modeQuickTabs.forEach((button) => {
+    button.addEventListener("click", () => setMode(button.dataset.mode));
+  });
   elements.quickCustomSpeechBtn.addEventListener("click", () => toggleQuickServiceOption("useCustomSpeech"));
   elements.quickCustomTranslatorBtn.addEventListener("click", () => toggleQuickServiceOption("useCustomTranslator"));
+  elements.runTextFlowBtn.addEventListener("click", handleRunTextFlow);
   elements.ttsLanguagePreset.addEventListener("change", () => {
     renderVoiceOptions(resolveCustomizableValue(elements.ttsLanguagePreset.value, elements.ttsLanguageCustom.value));
     persistActiveProfileDraft();
@@ -330,6 +346,7 @@ function normalizeProfileSettings(profile) {
   const normalizedTtsFormat = normalizePresetAndCustom(profile.ttsFormat, TTS_OUTPUT_FORMATS);
   return {
     ...profile,
+    appMode: profile.appMode === APP_MODE_TEXT ? APP_MODE_TEXT : APP_MODE_FULL,
     sttLocale: normalizedSttLocale.value || defaultProfileSettings.sttLocale,
     sttLocalePreset: normalizedSttLocale.preset,
     sttLocaleCustom: normalizedSttLocale.custom,
@@ -380,6 +397,7 @@ function switchProfile(profileId) {
   appState.activeProfileId = profileId;
   saveProfiles();
   hydrateProfile();
+  renderHistory().catch(() => {});
   log(`Switched to ${getActiveProfile().profileName}.`);
 }
 
@@ -405,6 +423,8 @@ function hydrateProfile() {
   elements.themeSelect.value = profile.theme || "light";
   applyTheme(profile.theme);
   updateConditionalFields();
+  renderModeUi();
+  resetLiveResultsForMode();
 }
 
 function renderProfileTabs() {
@@ -450,9 +470,26 @@ function handleSettingsChanged() {
   persistActiveProfileDraft();
 }
 
+function handleModeChange() {
+  updateConditionalFields();
+  renderModeUi();
+  persistActiveProfileDraft();
+  resetLiveResultsForMode();
+  renderHistory().catch(() => {});
+}
+
+function setMode(mode) {
+  const nextMode = mode === APP_MODE_TEXT ? APP_MODE_TEXT : APP_MODE_FULL;
+  if (getCurrentMode() === nextMode) return;
+  const profile = getActiveProfile();
+  profile.appMode = nextMode;
+  handleModeChange();
+}
+
 function updateConditionalFields() {
-  toggleConditionalField(elements.sttLocaleCustomWrap, elements.sttLocalePreset.value === CUSTOM_OPTION);
-  toggleConditionalField(elements.customSpeechEndpointIdWrap, Boolean(elements.settingsForm.elements.namedItem("useCustomSpeech").checked));
+  const isFullMode = getCurrentMode() === APP_MODE_FULL;
+  toggleConditionalField(elements.sttLocaleCustomWrap, isFullMode && elements.sttLocalePreset.value === CUSTOM_OPTION);
+  toggleConditionalField(elements.customSpeechEndpointIdWrap, isFullMode && Boolean(elements.settingsForm.elements.namedItem("useCustomSpeech").checked));
   toggleConditionalField(elements.translatorRegionCustomWrap, elements.translatorRegionPreset.value === CUSTOM_OPTION);
   toggleConditionalField(elements.translatorCategoryWrap, Boolean(elements.settingsForm.elements.namedItem("useCustomTranslator").checked));
   toggleConditionalField(elements.translatorFromCustomWrap, elements.translatorFromPreset.value === CUSTOM_OPTION);
@@ -474,6 +511,7 @@ function persistActiveProfileDraft() {
 }
 
 function toggleQuickServiceOption(fieldName) {
+  if (fieldName === "useCustomSpeech" && getCurrentMode() !== APP_MODE_FULL) return;
   const field = elements.settingsForm.elements.namedItem(fieldName);
   if (!field) return;
   field.checked = !field.checked;
@@ -482,6 +520,7 @@ function toggleQuickServiceOption(fieldName) {
 }
 
 function renderQuickServiceToggles() {
+  elements.quickCustomSpeechBtn.classList.toggle("is-hidden", getCurrentMode() !== APP_MODE_FULL);
   renderQuickServiceToggle(elements.quickCustomSpeechBtn, "useCustomSpeech", "Custom Speech");
   renderQuickServiceToggle(elements.quickCustomTranslatorBtn, "useCustomTranslator", "Custom Translator");
 }
@@ -498,11 +537,12 @@ function collectProfileFromForm() {
   const sttLocale = resolveCustomizableValue(data.get("sttLocalePreset"), data.get("sttLocaleCustom"));
   const translatorRegion = resolveCustomizableValue(data.get("translatorRegionPreset"), data.get("translatorRegionCustom"));
   const ttsLanguage = resolveCustomizableValue(data.get("ttsLanguagePreset"), data.get("ttsLanguageCustom"));
-  const ttsVoice = resolveCustomizableValue(data.get("ttsVoicePreset"), data.get("ttsVoiceCustom"));
-  const ttsFormat = resolveCustomizableValue(data.get("ttsFormatPreset"), data.get("ttsFormatCustom"));
-  return {
-    profileName: String(elements.profileName.value || "").trim() || "Untitled Profile",
-    theme: String(elements.themeSelect.value || "light").trim() || "light",
+    const ttsVoice = resolveCustomizableValue(data.get("ttsVoicePreset"), data.get("ttsVoiceCustom"));
+    const ttsFormat = resolveCustomizableValue(data.get("ttsFormatPreset"), data.get("ttsFormatCustom"));
+    return {
+      profileName: String(elements.profileName.value || "").trim() || "Untitled Profile",
+    appMode: getCurrentMode(),
+      theme: String(elements.themeSelect.value || "light").trim() || "light",
     sttEndpoint: sanitizeUrl(data.get("sttEndpoint")),
     speechKey: String(data.get("speechKey") || "").trim(),
     sttLocale,
@@ -581,6 +621,48 @@ function handleThemeChange() {
   applyTheme(getActiveProfile().theme);
 }
 
+function getCurrentMode() {
+  return getActiveProfile()?.appMode === APP_MODE_TEXT ? APP_MODE_TEXT : APP_MODE_FULL;
+}
+
+function renderModeUi() {
+  const isFullMode = getCurrentMode() === APP_MODE_FULL;
+  document.body.dataset.appMode = isFullMode ? APP_MODE_FULL : APP_MODE_TEXT;
+  elements.modeQuickTabs.forEach((button) => {
+    button.classList.toggle("active", button.dataset.mode === getCurrentMode());
+  });
+  elements.sttSettingsFieldset.classList.toggle("is-hidden", !isFullMode);
+  elements.voiceRecorderPanel.classList.toggle("is-hidden", !isFullMode);
+  elements.micGuidanceCard.classList.toggle("is-hidden", !isFullMode);
+  elements.sttResultCard.classList.toggle("is-hidden", !isFullMode);
+  elements.perfCardStt.classList.toggle("is-hidden", !isFullMode);
+  elements.textInputPanel.classList.toggle("is-hidden", isFullMode);
+  if (!isFullMode && appState.performanceView === "stt") {
+    appState.performanceView = "total";
+  }
+  const sttViewButton = elements.perfViewButtons.find((button) => button.dataset.view === "stt");
+  if (sttViewButton) {
+    sttViewButton.classList.toggle("is-hidden", !isFullMode);
+  }
+  renderQuickServiceToggles();
+}
+
+function resetLiveResultsForMode() {
+  const isFullMode = getCurrentMode() === APP_MODE_FULL;
+  if (!isFullMode) {
+    elements.sttMeta.textContent = "Hidden";
+    elements.sttText.textContent = "Speech-to-Text is disabled in Text Input Flow.";
+    elements.sttText.classList.remove("empty");
+    setStatus("idle", "Ready");
+    elements.textModeStatusPill.className = "status-pill idle";
+    elements.textModeStatusPill.textContent = "Ready";
+  } else {
+    elements.sttMeta.textContent = "Waiting";
+    elements.sttText.textContent = "Transcript will appear here.";
+    elements.sttText.classList.add("empty");
+  }
+}
+
 function togglePasswordField(button) {
   const targetName = button.dataset.target;
   const input = elements.settingsForm.elements.namedItem(targetName);
@@ -638,6 +720,7 @@ function applyTheme(themeName = getActiveProfile()?.theme || "light") {
 }
 
 async function beginRecording() {
+  if (getCurrentMode() !== APP_MODE_FULL) return;
   if (recorderState.activeRecordingPromise) return;
   recorderState.pendingPressStart = true;
   triggerHapticFeedback(12);
@@ -698,6 +781,7 @@ async function beginRecording() {
   }
 
 async function finishRecording() {
+  if (getCurrentMode() !== APP_MODE_FULL) return;
   if (recorderState.pendingPressStart && (!recorderState.mediaRecorder || recorderState.mediaRecorder.state === "inactive")) {
     recorderState.isPressing = false;
     recorderState.pendingPressStart = false;
@@ -1015,14 +1099,7 @@ function buildVuMeter() {
 
 async function processRecording(audioBlob, transcript) {
   const settings = getSettings();
-  const startedAt = new Date().toISOString();
   const apiCalls = [];
-  const performanceStats = {
-    sttMs: 0,
-    translationMs: 0,
-    ttsMs: 0,
-    totalMs: 0,
-  };
   setResultText(elements.sttText, "Transcribing...");
   setResultText(elements.translatedText, "Translating...");
   elements.sttMeta.textContent = "STT";
@@ -1045,18 +1122,93 @@ async function processRecording(audioBlob, transcript) {
   });
   const detectedLocale = settings.sttLocale || settings.translatorFrom;
   if (!transcript) throw new Error("Speech-to-Text returned no transcript.");
-  performanceStats.sttMs = Math.round(sttCompletedAt - recorderState.releaseStartedAt);
+  const sttMs = Math.round(sttCompletedAt - recorderState.releaseStartedAt);
 
   setResultText(elements.sttText, transcript);
   elements.sttMeta.textContent = detectedLocale || "Done";
   log(`STT result: ${transcript}`);
+  await runTranslationAndTtsFlow({
+    settings,
+    sourceText: transcript,
+    sourceLabel: detectedLocale,
+    apiCalls,
+    sttApiCallIndex: 0,
+    sttMs,
+    historyMode: APP_MODE_FULL,
+    recordingBlob: audioBlob,
+    audioMimeType: audioBlob.type || "audio/webm",
+    detectedLocale,
+  });
+}
+
+async function handleRunTextFlow() {
+  const settings = getSettings();
+  const sourceText = String(elements.sourceTextInput.value || "").trim();
+  const missing = validateBeforeTextFlow(settings, sourceText);
+  if (missing.length > 0) {
+    elements.textModeStatusPill.className = "status-pill error";
+    elements.textModeStatusPill.textContent = "Missing Settings";
+    setStatus("error", "Missing Settings");
+    log(`Cannot start text flow. Missing: ${missing.join(", ")}`);
+    return;
+  }
+
+  elements.textModeStatusPill.className = "status-pill processing";
+  elements.textModeStatusPill.textContent = "Processing";
+  setStatus("processing", "Processing");
+  resetPerformanceSummary();
+  setResultText(elements.translatedText, "Translating...");
+  elements.translatorMeta.textContent = "Translator";
+  elements.audioMeta.textContent = "TTS";
+  elements.ttsPlayer.removeAttribute("src");
+  elements.ttsPlayer.load();
+
+  try {
+    await runTranslationAndTtsFlow({
+      settings,
+      sourceText,
+      sourceLabel: "Input Text",
+      apiCalls: [],
+      sttMs: 0,
+      historyMode: APP_MODE_TEXT,
+      detectedLocale: "",
+    });
+    elements.textModeStatusPill.className = "status-pill success";
+    elements.textModeStatusPill.textContent = "Complete";
+  } catch (error) {
+    elements.textModeStatusPill.className = "status-pill error";
+    elements.textModeStatusPill.textContent = "Failed";
+    setStatus("error", "Failed");
+    log(`Pipeline failed: ${formatError(error)}`);
+  }
+}
+
+async function runTranslationAndTtsFlow({
+  settings,
+  sourceText,
+  sourceLabel,
+  apiCalls = [],
+  sttApiCallIndex = -1,
+  sttMs = 0,
+  historyMode = APP_MODE_FULL,
+  recordingBlob = null,
+  audioMimeType = "",
+  detectedLocale = "",
+}) {
+  const startedAt = new Date().toISOString();
+  const performanceStats = {
+    sttMs,
+    translationMs: 0,
+    ttsMs: 0,
+    totalMs: 0,
+  };
 
   const translationStartedAt = performance.now();
-  const translatorResponse = await translateText(transcript, settings, apiCalls);
+  const translatorResponse = await translateText(sourceText, settings, apiCalls);
   performanceStats.translationMs = Math.round(performance.now() - translationStartedAt);
   const translatedText = extractTranslation(translatorResponse);
   setResultText(elements.translatedText, translatedText);
-  elements.translatorMeta.textContent = `${settings.translatorFrom || detectedLocale} -> ${settings.translatorTo}`;
+  elements.translatorMeta.textContent = `${settings.translatorFrom || detectedLocale || sourceLabel} -> ${settings.translatorTo}`;
   log(`Translation result: ${translatedText}`);
 
   const ttsStartedAt = performance.now();
@@ -1068,27 +1220,31 @@ async function processRecording(audioBlob, transcript) {
   log("TTS audio generated.");
   updatePerformanceSummary(performanceStats);
 
-  setApiCallDuration(apiCalls, "Speech-to-Text", "POST", performanceStats.sttMs);
+  if (sttApiCallIndex >= 0 && apiCalls[sttApiCallIndex]) {
+    apiCalls[sttApiCallIndex].durationMs = performanceStats.sttMs;
+  }
   setApiCallDuration(apiCalls, "Translator", "POST", performanceStats.translationMs);
   setApiCallDuration(apiCalls, "Text-to-Speech", "POST", performanceStats.ttsMs);
 
   const sequence = await getNextHistorySequence();
   await saveHistoryEntry({
+    mode: historyMode,
     sequence,
     createdAt: startedAt,
     profileName: settings.profileName,
-    transcript,
+    transcript: sourceText,
+    sourceLabel,
     translatedText,
     detectedLocale,
-    sourceLanguage: settings.translatorFrom || detectedLocale,
+    sourceLanguage: settings.translatorFrom || detectedLocale || "",
     targetLanguage: settings.translatorTo,
     sttEndpoint: settings.sttEndpoint,
     translatorEndpoint: settings.translatorEndpoint,
     ttsEndpoint: settings.ttsEndpoint,
     ttsVoice: settings.ttsVoice,
-    audioMimeType: audioBlob.type || "audio/webm",
-    recordingBlob: audioBlob,
-    ttsAudioBlob: ttsAudioBlob,
+    audioMimeType,
+    recordingBlob,
+    ttsAudioBlob,
     ttsAudioMimeType: ttsAudioBlob.type || "audio/mpeg",
     performanceStats,
     apiCalls,
@@ -1215,14 +1371,19 @@ async function renderHistory() {
     const title = fragment.querySelector(".history-title");
     const subtitle = fragment.querySelector(".history-subtitle");
     const time = fragment.querySelector(".history-time");
+    const sourceSection = fragment.querySelector(".history-source-section");
+    const sourceLabel = fragment.querySelector(".history-source-label");
     const stt = fragment.querySelector(".history-stt");
     const translation = fragment.querySelector(".history-translation");
     const performance = fragment.querySelector(".history-performance");
     const apiWrap = fragment.querySelector(".history-api");
+    const recordingAudioWrap = fragment.querySelector(".history-recording-audio");
     const audio = fragment.querySelector(".history-audio");
     const ttsAudio = fragment.querySelector(".history-tts-audio");
     const removeBtn = fragment.querySelector(".history-delete");
     const card = fragment.querySelector(".history-item");
+    const entryMode = entry.mode === APP_MODE_TEXT ? APP_MODE_TEXT : APP_MODE_FULL;
+    const isTextModeView = getCurrentMode() === APP_MODE_TEXT;
 
     title.textContent = `#${entry.sequence || 0}  ${entry.profileName || "Profile"}`;
     subtitle.textContent = "";
@@ -1230,16 +1391,21 @@ async function renderHistory() {
     time.textContent = formatDateTime(entry.createdAt);
     stt.textContent = entry.transcript || "(empty)";
     translation.textContent = entry.translatedText || "(empty)";
-    performance.innerHTML = buildHistoryPerformanceMarkup(entry.performanceStats);
+    sourceLabel.textContent = entryMode === APP_MODE_TEXT ? "Input Text" : "STT";
+    sourceSection.classList.toggle("is-hidden", isTextModeView && entryMode === APP_MODE_FULL);
+    performance.innerHTML = buildHistoryPerformanceMarkup(entry.performanceStats, entryMode);
 
     if (Array.isArray(entry.apiCalls)) {
       entry.apiCalls.forEach((call) => {
-        const card = document.createElement("div");
-        card.className = "api-call";
+        if (isTextModeView && call.service === "Speech-to-Text") return;
+
+        const apiCard = document.createElement("div");
+        apiCard.className = "api-call";
         const heading = document.createElement("h5");
         heading.textContent = `${call.service} | ${call.method}`;
         const context = document.createElement("p");
         context.className = "api-call-context";
+
         if (call.service === "Speech-to-Text") {
           context.textContent = [`Locale: ${entry.detectedLocale || "-"}`, `Audio: ${entry.audioMimeType || "-"}`].join(" | ");
         } else if (call.service === "Translator") {
@@ -1247,33 +1413,37 @@ async function renderHistory() {
         } else if (call.service === "Text-to-Speech") {
           context.textContent = [`Voice: ${entry.ttsVoice || "-"}`, `Output: ${entry.ttsAudioMimeType || "-"}`].join(" | ");
         }
+
         const url = document.createElement("p");
         url.className = "api-call-url";
         url.textContent = call.url;
         const pre = document.createElement("pre");
         pre.textContent = JSON.stringify(call.params, null, 2);
+
+        apiCard.append(heading, context);
+        if (call.url) {
+          apiCard.appendChild(url);
+        }
         if (typeof call.durationMs === "number") {
           const duration = document.createElement("p");
           duration.className = "api-call-duration";
           duration.textContent = `Duration: ${formatMilliseconds(call.durationMs)}`;
-          card.append(heading, context);
-          if (call.url) {
-            card.appendChild(url);
-          }
-          card.append(duration, pre);
+          apiCard.append(duration, pre);
         } else {
-          card.append(heading, context);
-          if (call.url) {
-            card.appendChild(url);
-          }
-          card.appendChild(pre);
+          apiCard.appendChild(pre);
         }
-        apiWrap.appendChild(card);
+        apiWrap.appendChild(apiCard);
       });
     }
 
-    if (entry.recordingBlob) audio.src = URL.createObjectURL(entry.recordingBlob);
-    if (entry.ttsAudioBlob) ttsAudio.src = URL.createObjectURL(entry.ttsAudioBlob);
+    recordingAudioWrap.classList.toggle("is-hidden", isTextModeView || !entry.recordingBlob);
+    if (entry.recordingBlob && !isTextModeView) {
+      audio.src = URL.createObjectURL(entry.recordingBlob);
+    }
+    if (entry.ttsAudioBlob) {
+      ttsAudio.src = URL.createObjectURL(entry.ttsAudioBlob);
+    }
+
     removeBtn.addEventListener("click", async () => {
       await deleteHistoryEntry(entry.id);
       if (audio.src) URL.revokeObjectURL(audio.src);
@@ -1286,6 +1456,7 @@ async function renderHistory() {
       await renderHistory();
       log("History item deleted.");
     });
+
     elements.historyList.appendChild(fragment);
   }
 
@@ -1515,13 +1686,15 @@ function formatPerformanceSummary(stats = {}) {
   ].join(" | ");
 }
 
-function buildHistoryPerformanceMarkup(stats = {}) {
-  return [
-    `<span>STT: ${formatMilliseconds(stats.sttMs)}</span>`,
-    `<span>Translation: ${formatMilliseconds(stats.translationMs)}</span>`,
-    `<span>TTS: ${formatMilliseconds(stats.ttsMs)}</span>`,
-    `<span class="history-performance-total">Total: ${formatMilliseconds(stats.totalMs)}</span>`,
-  ].join(" | ");
+function buildHistoryPerformanceMarkup(stats = {}, mode = APP_MODE_FULL) {
+  const items = [];
+  if (mode === APP_MODE_FULL) {
+    items.push(`<span>STT: ${formatMilliseconds(stats.sttMs)}</span>`);
+  }
+  items.push(`<span>Translation: ${formatMilliseconds(stats.translationMs)}</span>`);
+  items.push(`<span>TTS: ${formatMilliseconds(stats.ttsMs)}</span>`);
+  items.push(`<span class="history-performance-total">Total: ${formatMilliseconds(stats.totalMs)}</span>`);
+  return items.join(" | ");
 }
 
 function renderPerformanceTrend(entries) {
@@ -1694,7 +1867,11 @@ function getPerformanceMetric(stats = {}, view = "total") {
 }
 
 function setPerformanceView(view) {
-  appState.performanceView = view || "total";
+  if (getCurrentMode() === APP_MODE_TEXT && view === "stt") {
+    appState.performanceView = "total";
+  } else {
+    appState.performanceView = view || "total";
+  }
   updatePerformanceViewButtons();
   renderHistory();
 }
@@ -1736,6 +1913,21 @@ function validateBeforeRecording(settings) {
   if (!settings.speechKey) missing.push("Speech Key");
   if (!settings.sttLocale) missing.push("STT Locale");
   if (settings.useCustomSpeech && !settings.customSpeechEndpointId) missing.push("Custom Speech Endpoint ID");
+  if (!settings.translatorEndpoint) missing.push("Translator Endpoint");
+  if (!settings.translatorKey) missing.push("Translator Key");
+  if (!settings.translatorFrom) missing.push("Translator From");
+  if (!settings.translatorTo) missing.push("Translator To");
+  if (!settings.ttsEndpoint) missing.push("TTS Endpoint");
+  if (!settings.ttsKey) missing.push("TTS Key");
+  if (!settings.ttsLanguage) missing.push("TTS Voice Locale");
+  if (!settings.ttsVoice) missing.push("TTS Voice");
+  if (!settings.ttsFormat) missing.push("TTS Output Format");
+  return missing;
+}
+
+function validateBeforeTextFlow(settings, sourceText) {
+  const missing = [];
+  if (!sourceText) missing.push("Source Text");
   if (!settings.translatorEndpoint) missing.push("Translator Endpoint");
   if (!settings.translatorKey) missing.push("Translator Key");
   if (!settings.translatorFrom) missing.push("Translator From");

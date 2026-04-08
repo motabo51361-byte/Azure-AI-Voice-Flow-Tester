@@ -18,16 +18,20 @@
     </button>
   </div>
   <div class="settings-toolbar">
-    <button id="open-settings-fab" class="settings-fab" type="button" aria-expanded="false" aria-controls="settings-drawer" aria-label="Open settings">
-      <span class="settings-fab-icon" aria-hidden="true">&#9881;</span>
-    </button>
-    <div class="settings-quick-switch" role="tablist" aria-label="Quick profile switch">
-      <button class="profile-quick-tab active" type="button" data-profile-id="profileA">Profile 1</button>
-      <button class="profile-quick-tab" type="button" data-profile-id="profileB">Profile 2</button>
-    </div>
-    <div class="service-quick-switch" aria-label="Quick custom service toggles">
-      <button id="quick-custom-speech-btn" class="service-quick-toggle" type="button" aria-pressed="false">
-        <span class="service-quick-icon" aria-hidden="true">&#8646;</span>
+      <button id="open-settings-fab" class="settings-fab" type="button" aria-expanded="false" aria-controls="settings-drawer" aria-label="Open settings">
+        <span class="settings-fab-icon" aria-hidden="true">&#9881;</span>
+      </button>
+      <div class="settings-quick-switch" role="tablist" aria-label="Quick profile switch">
+        <button class="profile-quick-tab active" type="button" data-profile-id="profileA">Profile 1</button>
+        <button class="profile-quick-tab" type="button" data-profile-id="profileB">Profile 2</button>
+      </div>
+      <div class="mode-quick-switch" role="tablist" aria-label="Quick mode switch">
+        <button id="mode-full-btn" class="mode-quick-tab active" type="button" data-mode="full">Full</button>
+        <button id="mode-text-btn" class="mode-quick-tab" type="button" data-mode="text">Text</button>
+      </div>
+      <div class="service-quick-switch" aria-label="Quick custom service toggles">
+        <button id="quick-custom-speech-btn" class="service-quick-toggle" type="button" aria-pressed="false">
+          <span class="service-quick-icon" aria-hidden="true">&#8646;</span>
         <span class="service-quick-text">Custom<br>Speech</span>
       </button>
       <button id="quick-custom-translator-btn" class="service-quick-toggle" type="button" aria-pressed="false">
@@ -128,7 +132,7 @@
 
         <div id="settings-content" class="settings-content">
         <form id="settings-form" class="settings-form">
-          <fieldset>
+          <fieldset id="stt-settings-fieldset">
             <legend>Speech-to-Text</legend>
             <label>
               <span>STT Endpoint</span>
@@ -316,7 +320,7 @@
         </article>
 
         <section class="perf-strip" aria-label="API performance">
-          <article class="perf-card">
+          <article id="perf-card-stt" class="perf-card">
             <span class="perf-label">STT</span>
             <strong id="perf-stt">-- ms</strong>
           </article>
@@ -334,7 +338,7 @@
           </article>
         </section>
 
-        <div class="recorder">
+        <div id="voice-recorder-panel" class="recorder">
           <div class="mic-access">
             <button id="enable-mic-btn" class="secondary-button" type="button">Enable Microphone</button>
             <span id="mic-permission-pill" class="status-pill idle">Mic permission: unknown</span>
@@ -399,8 +403,19 @@
           </div>
         </div>
 
+        <div id="text-input-panel" class="text-input-panel is-hidden">
+          <label class="text-input-label" for="source-text-input">
+            <span>Source Text</span>
+            <textarea id="source-text-input" class="source-text-input" rows="6" placeholder="Type text here to test Translator and Text-to-Speech."></textarea>
+          </label>
+          <div class="text-input-actions">
+            <span id="text-mode-status-pill" class="status-pill idle">Ready</span>
+            <button id="run-text-flow-btn" class="secondary-button" type="button">Translate &amp; Speak</button>
+          </div>
+        </div>
+
         <div class="results">
-          <article class="result-card">
+          <article id="stt-result-card" class="result-card">
             <div class="result-head">
               <h3>Speech-to-Text</h3>
               <span id="stt-meta" class="meta-tag">Waiting</span>
@@ -451,8 +466,8 @@
         <button class="text-button history-delete" type="button">Delete</button>
       </div>
       <div class="history-grid">
-        <div>
-          <h4>STT</h4>
+        <div class="history-source-section">
+          <h4 class="history-source-label">STT</h4>
           <p class="history-stt"></p>
         </div>
         <div>
@@ -463,7 +478,7 @@
       <div class="history-performance"></div>
       <div class="history-api"></div>
       <div class="history-audio-group">
-        <div>
+        <div class="history-recording-audio">
           <h4>Recorded Audio</h4>
           <audio class="history-audio" controls></audio>
         </div>

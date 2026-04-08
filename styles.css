@@ -309,6 +309,41 @@ select {
   overflow: visible;
 }
 
+.mode-quick-switch {
+  display: inline-flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border-radius: 14px;
+  border: 0;
+  background: transparent;
+  min-width: 0;
+}
+
+.mode-quick-tab {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 9px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 1.05;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.mode-quick-tab.active {
+  background: rgba(240, 183, 109, 0.2);
+  color: var(--primary-deep);
+  border-color: rgba(199, 75, 50, 0.28);
+}
+
 .settings-fab {
   display: inline-flex;
   align-items: center;
@@ -714,6 +749,10 @@ h1 {
   gap: 12px;
 }
 
+body[data-app-mode="text"] .perf-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .perf-card {
   padding: 14px 16px;
   border-radius: 18px;
@@ -981,6 +1020,7 @@ body[data-theme="dark"] .field-help code {
 input[type="url"],
 input[type="password"],
 input[type="text"],
+textarea,
 select {
   width: 100%;
   border: 1px solid rgba(80, 56, 33, 0.18);
@@ -1014,6 +1054,7 @@ select {
 body[data-theme="dark"] input[type="url"],
 body[data-theme="dark"] input[type="password"],
 body[data-theme="dark"] input[type="text"],
+body[data-theme="dark"] textarea,
 body[data-theme="dark"] select {
   background: #111918;
   border-color: rgba(168, 193, 184, 0.22);
@@ -1025,6 +1066,7 @@ body[data-theme="dark"] input::placeholder {
 }
 
 input:focus,
+textarea:focus,
 select:focus {
   outline: 2px solid rgba(199, 75, 50, 0.24);
   border-color: rgba(199, 75, 50, 0.5);
@@ -1032,6 +1074,10 @@ select:focus {
 
 .conditional-field.is-hidden {
   display: none;
+}
+
+.is-hidden {
+  display: none !important;
 }
 
 .grid-two {
@@ -1148,6 +1194,33 @@ body[data-theme="light"] .recorder {
   display: flex;
   justify-content: center;
   margin-bottom: 14px;
+}
+
+.text-input-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+}
+
+.text-input-label {
+  gap: 10px;
+}
+
+.source-text-input {
+  min-height: 160px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.text-input-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .recording-stage {
@@ -2062,6 +2135,7 @@ body[data-theme="blackmetal"] .history-page-info {
 body[data-theme="blackmetal"] input[type="url"],
 body[data-theme="blackmetal"] input[type="password"],
 body[data-theme="blackmetal"] input[type="text"],
+body[data-theme="blackmetal"] textarea,
 body[data-theme="blackmetal"] select {
   background: #13171a;
   border-color: rgba(173, 181, 190, 0.2);
@@ -2069,6 +2143,14 @@ body[data-theme="blackmetal"] select {
 }
 
 body[data-theme="blackmetal"] input::placeholder {
+  color: #94a0ab;
+}
+
+body[data-theme="dark"] textarea::placeholder {
+  color: #8da39b;
+}
+
+body[data-theme="blackmetal"] textarea::placeholder {
   color: #94a0ab;
 }
 
@@ -2279,6 +2361,11 @@ body[data-theme="dark"] .recorder-hint {
     align-items: center;
     flex-direction: row;
     padding: 4px;
+  }
+
+  .mode-quick-tab {
+    padding: 5px 8px;
+    font-size: 0.7rem;
   }
 
   .settings-fab {
