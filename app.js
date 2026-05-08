@@ -3,6 +3,10 @@ const UI_KEY = "azure-ai-tester-ui-v1";
 const DB_NAME = "azure-ai-tester-db";
 const DB_VERSION = 1;
 const HISTORY_STORE = "history";
+const APP_VERSION = "v1.2.0";
+const APP_LAST_UPDATED_AT = "2026-05-07T12:00:00+08:00";
+const UI_LANG_EN = "en";
+const UI_LANG_ZH_TW = "zh-TW";
 const MAX_LOG_LINES = 40;
 const CUSTOM_OPTION = "__custom__";
 const APP_MODE_FULL = "full";
@@ -117,11 +121,344 @@ const defaultProfiles = {
   },
 };
 
+const I18N = {
+  [UI_LANG_EN]: {
+    appTitle: "Azure AI Voice Flow Tester",
+    versionLabel: "Version {version}",
+    lastUpdatedLabel: "Updated {date}",
+    heroEyebrow: "Speech-to-Text • Translator • Text-to-Speech",
+    heroDescription: "Static web app for testing Speech-to-Text, Translator, and Text-to-Speech with custom endpoints. History stays in the browser so recordings and transcripts can be reviewed any time.",
+    openHistory: "Open history",
+    openSettings: "Open settings",
+    quickProfileSwitch: "Quick profile switch",
+    quickModeSwitch: "Quick mode switch",
+    quickLanguageSwitch: "Quick language switch",
+    quickCustomToggles: "Quick custom service toggles",
+    configurationProfiles: "Configuration profiles",
+    history: "History",
+    close: "Close",
+    historyCopy: "Recordings, transcripts, translations, and a small settings summary are stored in this browser's IndexedDB.",
+    apiRespondTime: "API Respond Time",
+    performanceView: "Performance view",
+    total: "Total",
+    translation: "Translation",
+    apiCallHistory: "API Call History",
+    clearAll: "Clear All",
+    serviceSettings: "Service Settings",
+    profileName: "Profile Name",
+    displayLanguage: "Display Language",
+    profileHelp: "Two profiles are stored in this browser. Switch tabs to change or rename each configuration.",
+    skin: "Skin",
+    liveTest: "Live Test",
+    activityLog: "Activity Log",
+    clear: "Clear",
+    pleaseEnableMic: "Please enable microphone first",
+    pleaseEnableMicDesc: "Click Enable Microphone once before using Hold To Record.",
+    enableMicrophone: "Enable Microphone",
+    holdToRecord: "Hold To Record",
+    sourceText: "Source Text",
+    sourceTextPlaceholder: "Type text here to test Translator and Text-to-Speech.",
+    translateAndSpeak: "Translate & Speak",
+    speechToText: "Speech-to-Text",
+    translator: "Translation",
+    ttsAudio: "TTS Audio",
+    transcriptPlaceholder: "Transcript will appear here.",
+    translationPlaceholder: "Translated text will appear here.",
+    waiting: "Waiting",
+    hidden: "Hidden",
+    idle: "Idle",
+    ready: "Ready",
+    processing: "Processing",
+    complete: "Complete",
+    failed: "Failed",
+    recording: "Recording",
+    missingSettings: "Missing Settings",
+    micNotSupported: "Mic Not Supported",
+    micError: "Mic Error",
+    microphoneReady: "Microphone is ready",
+    microphoneReadyDesc: "Permission has been granted. You can now use Hold To Record without re-enabling the microphone.",
+    microphoneDenied: "Microphone access was denied",
+    microphoneDeniedDesc: "Please reopen microphone access in your browser site settings, then click Enable Microphone again.",
+    micPermissionGranted: "Mic permission: granted",
+    micPermissionPrompt: "Mic permission: prompt",
+    micPermissionDenied: "Mic permission: denied",
+    micPermissionUnknown: "Mic permission: unknown",
+    noHistoryYet: "No history yet.",
+    noPerformanceSamples: "No performance samples yet",
+    oldest: "Oldest",
+    latest: "Latest",
+    first: "First",
+    previous: "Previous",
+    next: "Next",
+    pageInfo: "Page {current} / {total}",
+    sttShort: "STT",
+    ttsShort: "TTS",
+    inputText: "Input Text",
+    recordedAudio: "Recorded Audio",
+    ttsAudioLabel: "TTS Audio",
+    delete: "Delete",
+    duration: "Duration",
+    output: "Output",
+    from: "From",
+    to: "To",
+    voice: "Voice",
+    locale: "Locale",
+    audio: "Audio",
+    fullMode: "Full",
+    textMode: "Text",
+    custom: "Custom",
+    show: "Show",
+    hide: "Hide",
+    appReadyFull: "App ready. Fill in Azure settings and hold the record button.",
+    appReadyText: "App ready. Type text to test Translator and TTS.",
+    switchedProfile: "Switched to {name}.",
+    historyCleared: "History cleared.",
+    historyDeleted: "History item deleted.",
+    historySequenceNotFound: "History sequence #{sequence} was not found.",
+    autoplayBlocked: "Autoplay blocked by browser. Use the audio controls to play.",
+    textInputFlowDisabledStt: "Speech-to-Text is disabled in Text Input Flow.",
+    cannotStartRecordingMissing: "Cannot start recording. Missing: {items}",
+    browserNoGetUserMedia: "This browser does not support getUserMedia.",
+    recordingStarted: "Recording started.",
+    microphoneAccessFailed: "Microphone access failed: {error}",
+    recordingStoppedProcessing: "Recording stopped. Running STT, translation, and TTS.",
+    pipelineFailed: "Pipeline failed: {error}",
+    micAlreadyGranted: "Microphone permission already granted.",
+    micGrantedReady: "Microphone permission granted and ready.",
+    micPermissionRequestFailed: "Microphone permission request failed: {error}",
+    sttCanceled: "STT canceled: {error}",
+    sttResult: "STT result: {text}",
+    cannotStartTextFlowMissing: "Cannot start text flow. Missing: {items}",
+    translationResult: "Translation result: {text}",
+    ttsGenerated: "TTS audio generated.",
+    ttsEndpointKeyRequired: "TTS endpoint and key are required before loading voices.",
+    loadedVoices: "Loaded {count} voices.",
+    failedToLoadVoices: "Failed to load voices: {error}",
+    speechToTextLegend: "Speech-to-Text",
+    translatorLegend: "Translator",
+    textToSpeechLegend: "Text-to-Speech",
+    sttEndpoint: "STT Endpoint",
+    speechKey: "Speech Key",
+    localeHelp: "Locale is the speech recognition language locale in BCP-47 format. Examples: ja-JP, en-US, zh-TW.",
+    customLocale: "Custom Locale",
+    customLocalePlaceholder: "Enter custom locale",
+    useCustomSpeech: "Use Custom Speech",
+    customSpeechShort: "Custom<br>Speech",
+    customEndpointId: "Custom Endpoint ID",
+    customEndpointPlaceholder: "Enter Custom Speech endpoint ID",
+    customSpeechHelp: "Use the deployed Custom Speech endpoint ID for recognition.",
+    speechLocaleDocs: "Speech locale docs",
+    customSpeechDocs: "Custom Speech docs",
+    translatorEndpoint: "Translator Endpoint",
+    translatorKey: "Translator Key",
+    translatorRegion: "Translator Region",
+    translatorRegionHelp: "Region for the Translator resource. Default is japaneast.",
+    customRegion: "Custom Region",
+    customRegionPlaceholder: "Enter custom region",
+    useCustomTranslator: "Use Custom Translator",
+    customTranslatorShort: "Custom<br>Translator",
+    categoryId: "Category ID",
+    translatorCategoryPlaceholder: "Custom Translator category",
+    customTranslatorHelp: "Use the deployed Custom Translator category ID for translation.",
+    fromHelp: "Source language code for the spoken audio. Examples: ja, en, zh-Hant.",
+    toHelp: "Target language code for translation. Examples: en, fr, zh-Hant.",
+    customFromCode: "Custom From Code",
+    customToCode: "Custom To Code",
+    customLanguagePlaceholder: "Enter custom language code",
+    translatorLanguageDocs: "Translator language docs",
+    translateApiDocs: "Translate API docs",
+    ttsEndpoint: "TTS Endpoint",
+    ttsKey: "TTS Key",
+    voiceLocale: "Voice Locale",
+    voiceLocaleHelp: "Voice locale in BCP-47 format. Examples: en-US, ja-JP, zh-TW.",
+    voiceName: "Voice Name",
+    voiceNameHelp: "Full Azure voice short name. Examples: en-US-AvaNeural, ja-JP-NanamiNeural, zh-TW-HsiaoChenNeural.",
+    customVoiceLocale: "Custom Voice Locale",
+    customVoiceLocalePlaceholder: "Enter custom voice locale",
+    customVoiceName: "Custom Voice Name",
+    customVoiceNamePlaceholder: "Enter custom voice name",
+    outputFormat: "Output Format",
+    rate: "Rate",
+    customOutputFormat: "Custom Output Format",
+    customOutputFormatPlaceholder: "Enter custom output format",
+    loadVoices: "Load Voices",
+    voiceAndLocaleDocs: "Voice and locale docs",
+    ttsRestDocs: "TTS REST docs",
+    profileUntitled: "Untitled Profile",
+    profileFallback: "Profile",
+  },
+  [UI_LANG_ZH_TW]: {
+    appTitle: "Azure AI Voice Flow Tester",
+    versionLabel: "版本 {version}",
+    lastUpdatedLabel: "最後更新 {date}",
+    heroEyebrow: "語音轉文字 • 翻譯 • 文字轉語音",
+    heroDescription: "這是一個可測試 Speech-to-Text、Translator 與 Text-to-Speech 的靜態網站，支援自訂 Endpoint，並會把歷程保存在瀏覽器中，方便隨時回看錄音與文字結果。",
+    openHistory: "開啟歷史紀錄",
+    openSettings: "開啟設定",
+    quickProfileSwitch: "快速切換設定檔",
+    quickModeSwitch: "快速切換模式",
+    quickLanguageSwitch: "快速切換顯示語系",
+    quickCustomToggles: "快速切換自訂服務",
+    configurationProfiles: "設定檔",
+    history: "歷史紀錄",
+    close: "關閉",
+    historyCopy: "錄音、辨識文字、翻譯結果，以及部分設定摘要都會保存在此瀏覽器的 IndexedDB 中。",
+    apiRespondTime: "API 回應時間",
+    performanceView: "效能檢視",
+    total: "總計",
+    translation: "翻譯",
+    apiCallHistory: "API 呼叫歷程",
+    clearAll: "全部清除",
+    serviceSettings: "服務設定",
+    profileName: "設定檔名稱",
+    displayLanguage: "顯示語系",
+    profileHelp: "此瀏覽器中會保存兩組設定檔，可切換頁籤來修改或重新命名。",
+    skin: "主題外觀",
+    liveTest: "即時測試",
+    activityLog: "活動記錄",
+    clear: "清除",
+    pleaseEnableMic: "請先啟用麥克風",
+    pleaseEnableMicDesc: "在使用 Hold To Record 前，請先按一次 Enable Microphone。",
+    enableMicrophone: "啟用麥克風",
+    holdToRecord: "按住錄音",
+    sourceText: "來源文字",
+    sourceTextPlaceholder: "請輸入要測試 Translator 與 Text-to-Speech 的文字。",
+    translateAndSpeak: "翻譯並播放",
+    speechToText: "語音轉文字",
+    translator: "翻譯結果",
+    ttsAudio: "TTS 音訊",
+    transcriptPlaceholder: "辨識文字會顯示在這裡。",
+    translationPlaceholder: "翻譯結果會顯示在這裡。",
+    waiting: "等待中",
+    hidden: "已隱藏",
+    idle: "待命",
+    ready: "已就緒",
+    processing: "處理中",
+    complete: "已完成",
+    failed: "失敗",
+    recording: "錄音中",
+    missingSettings: "缺少設定",
+    micNotSupported: "不支援麥克風",
+    micError: "麥克風錯誤",
+    microphoneReady: "麥克風已就緒",
+    microphoneReadyDesc: "權限已授與，之後可直接使用 Hold To Record，不必再次啟用麥克風。",
+    microphoneDenied: "麥克風權限遭拒",
+    microphoneDeniedDesc: "請到瀏覽器網站權限設定重新開啟麥克風，然後再按一次 Enable Microphone。",
+    micPermissionGranted: "麥克風權限：已允許",
+    micPermissionPrompt: "麥克風權限：等待確認",
+    micPermissionDenied: "麥克風權限：已拒絕",
+    micPermissionUnknown: "麥克風權限：未知",
+    noHistoryYet: "目前還沒有歷史紀錄。",
+    noPerformanceSamples: "目前還沒有效能樣本",
+    oldest: "最舊",
+    latest: "最新",
+    first: "第一頁",
+    previous: "上一頁",
+    next: "下一頁",
+    pageInfo: "第 {current} / {total} 頁",
+    sttShort: "STT",
+    ttsShort: "TTS",
+    inputText: "輸入文字",
+    recordedAudio: "原始錄音",
+    ttsAudioLabel: "TTS 音訊",
+    delete: "刪除",
+    duration: "耗時",
+    output: "輸出",
+    from: "來源",
+    to: "目標",
+    voice: "語音",
+    locale: "語系",
+    audio: "音訊",
+    fullMode: "完整",
+    textMode: "文字",
+    custom: "自訂",
+    show: "顯示",
+    hide: "隱藏",
+    appReadyFull: "網站已就緒。請填入 Azure 設定後按住錄音按鈕開始測試。",
+    appReadyText: "網站已就緒。請直接輸入文字測試 Translator 與 TTS。",
+    switchedProfile: "已切換到 {name}。",
+    historyCleared: "歷史紀錄已清除。",
+    historyDeleted: "該筆歷史紀錄已刪除。",
+    historySequenceNotFound: "找不到序號 #{sequence} 的歷史紀錄。",
+    autoplayBlocked: "瀏覽器已阻擋自動播放，請使用音訊控制列手動播放。",
+    textInputFlowDisabledStt: "文字輸入模式下已停用 Speech-to-Text。",
+    cannotStartRecordingMissing: "無法開始錄音，缺少：{items}",
+    browserNoGetUserMedia: "此瀏覽器不支援 getUserMedia。",
+    recordingStarted: "錄音已開始。",
+    microphoneAccessFailed: "麥克風啟用失敗：{error}",
+    recordingStoppedProcessing: "錄音已結束，正在執行 STT、翻譯與 TTS。",
+    pipelineFailed: "流程失敗：{error}",
+    micAlreadyGranted: "麥克風權限已允許。",
+    micGrantedReady: "麥克風權限已允許並可開始使用。",
+    micPermissionRequestFailed: "申請麥克風權限失敗：{error}",
+    sttCanceled: "STT 已取消：{error}",
+    sttResult: "STT 結果：{text}",
+    cannotStartTextFlowMissing: "無法開始文字流程，缺少：{items}",
+    translationResult: "翻譯結果：{text}",
+    ttsGenerated: "TTS 音訊已產生。",
+    ttsEndpointKeyRequired: "載入語音清單前，請先填入 TTS Endpoint 與 Key。",
+    loadedVoices: "已載入 {count} 筆語音資料。",
+    failedToLoadVoices: "載入語音失敗：{error}",
+    speechToTextLegend: "Speech-to-Text",
+    translatorLegend: "Translator",
+    textToSpeechLegend: "Text-to-Speech",
+    sttEndpoint: "STT Endpoint",
+    speechKey: "Speech Key",
+    localeHelp: "Locale 是語音辨識使用的 BCP-47 語系代碼，例如：ja-JP、en-US、zh-TW。",
+    customLocale: "自訂 Locale",
+    customLocalePlaceholder: "輸入自訂 locale",
+    useCustomSpeech: "使用 Custom Speech",
+    customSpeechShort: "自訂<br>Speech",
+    customEndpointId: "Custom Endpoint ID",
+    customEndpointPlaceholder: "輸入 Custom Speech Endpoint ID",
+    customSpeechHelp: "若使用自訂模型，請填入已部署的 Custom Speech Endpoint ID。",
+    speechLocaleDocs: "Speech 語系文件",
+    customSpeechDocs: "Custom Speech 文件",
+    translatorEndpoint: "Translator Endpoint",
+    translatorKey: "Translator Key",
+    translatorRegion: "Translator Region",
+    translatorRegionHelp: "Translator 資源所在區域，預設為 japaneast。",
+    customRegion: "自訂 Region",
+    customRegionPlaceholder: "輸入自訂 region",
+    useCustomTranslator: "使用 Custom Translator",
+    customTranslatorShort: "自訂<br>Translator",
+    categoryId: "Category ID",
+    translatorCategoryPlaceholder: "輸入 Custom Translator Category",
+    customTranslatorHelp: "若使用自訂翻譯模型，請填入已部署的 Category ID。",
+    fromHelp: "來源語言代碼，例如：ja、en、zh-Hant。",
+    toHelp: "目標語言代碼，例如：en、fr、zh-Hant。",
+    customFromCode: "自訂來源代碼",
+    customToCode: "自訂目標代碼",
+    customLanguagePlaceholder: "輸入自訂語言代碼",
+    translatorLanguageDocs: "Translator 語言文件",
+    translateApiDocs: "Translate API 文件",
+    ttsEndpoint: "TTS Endpoint",
+    ttsKey: "TTS Key",
+    voiceLocale: "Voice Locale",
+    voiceLocaleHelp: "Voice Locale 使用 BCP-47 格式，例如：en-US、ja-JP、zh-TW。",
+    voiceName: "Voice Name",
+    voiceNameHelp: "請填完整 Azure Voice short name，例如：en-US-AvaNeural、ja-JP-NanamiNeural、zh-TW-HsiaoChenNeural。",
+    customVoiceLocale: "自訂 Voice Locale",
+    customVoiceLocalePlaceholder: "輸入自訂 voice locale",
+    customVoiceName: "自訂 Voice Name",
+    customVoiceNamePlaceholder: "輸入自訂 voice name",
+    outputFormat: "輸出格式",
+    rate: "語速",
+    customOutputFormat: "自訂輸出格式",
+    customOutputFormatPlaceholder: "輸入自訂輸出格式",
+    loadVoices: "載入語音清單",
+    voiceAndLocaleDocs: "Voice 與 Locale 文件",
+    ttsRestDocs: "TTS REST 文件",
+    profileUntitled: "未命名設定檔",
+    profileFallback: "設定檔",
+  },
+};
 const elements = {
   openHistoryFab: document.querySelector("#open-history-fab"),
   historyDrawer: document.querySelector("#history-drawer"),
   historyBackdrop: document.querySelector("#history-backdrop"),
   settingsForm: document.querySelector("#settings-form"),
+  uiLanguageSelect: document.querySelector("#ui-language-select"),
   quickCustomSpeechBtn: document.querySelector("#quick-custom-speech-btn"),
   quickCustomTranslatorBtn: document.querySelector("#quick-custom-translator-btn"),
   openSettingsFab: document.querySelector("#open-settings-fab"),
@@ -160,6 +497,11 @@ const elements = {
   logContent: document.querySelector("#log-content"),
   perfTrendChart: document.querySelector("#perf-trend-chart"),
   perfViewButtons: Array.from(document.querySelectorAll(".view-switcher-btn")),
+  versionBadge: document.querySelector("#version-badge"),
+  lastUpdatedBadge: document.querySelector("#last-updated-badge"),
+  heroEyebrow: document.querySelector("#hero-eyebrow"),
+  heroTitle: document.querySelector("#hero-title"),
+  heroDescription: document.querySelector("#hero-description"),
   toggleHistoryBtn: document.querySelector("#toggle-history-btn"),
   historyContent: document.querySelector("#history-content"),
   historyList: document.querySelector("#history-list"),
@@ -204,6 +546,7 @@ let appState = {
   activeProfileId: defaultProfiles.activeProfileId,
   profiles: JSON.parse(JSON.stringify(defaultProfiles.profiles)),
   voices: [...DEFAULT_VOICES],
+  uiLanguage: UI_LANG_EN,
   settingsOpen: false,
   historyOpen: false,
   historyPage: 1,
@@ -241,6 +584,7 @@ boot();
 async function boot() {
   loadProfiles();
   loadUiState();
+  applyTranslations();
   renderStaticOptions();
   hydrateProfile();
   wireEvents();
@@ -251,12 +595,15 @@ async function boot() {
   setVuMeterLevel(0);
   await initMicrophonePermissionState();
   await renderHistory();
-  log(`App ready. ${getActiveProfile().appMode === APP_MODE_TEXT ? "Type text to test Translator and TTS." : "Fill in Azure settings and hold the record button."}`);
+  log(getCurrentMode() === APP_MODE_TEXT ? t("appReadyText") : t("appReadyFull"));
 }
 
 function wireEvents() {
   elements.clearLogBtn.addEventListener("click", () => {
     elements.logOutput.innerHTML = "";
+  });
+  elements.uiLanguageSelect?.addEventListener("change", (event) => {
+    setUiLanguage(event.target.value);
   });
   elements.toggleHistoryBtn.addEventListener("click", toggleHistoryPanel);
   elements.clearHistoryBtn.addEventListener("click", handleClearHistory);
@@ -307,7 +654,7 @@ function wireEvents() {
 function renderStaticOptions() {
   populateSelectWithCustom(elements.sttLocalePreset, STT_LOCALES.map((locale) => ({ value: locale, label: locale })));
   const translatorOptions = TRANSLATOR_LANGUAGES.map((item) => ({ value: item.code, label: `${item.code} - ${item.label}` }));
-  translatorOptions.push({ value: CUSTOM_OPTION, label: "Custom" });
+  translatorOptions.push({ value: CUSTOM_OPTION, label: t("custom") });
   populateSelect(elements.translatorFromPreset, translatorOptions);
   populateSelect(elements.translatorToPreset, translatorOptions);
   renderTranslatorRegionOptions(defaultProfileSettings.translatorRegion);
@@ -372,6 +719,7 @@ function saveProfiles() {
 function loadUiState() {
   try {
     const saved = JSON.parse(localStorage.getItem(UI_KEY) || "null");
+    appState.uiLanguage = normalizeUiLanguage(saved?.uiLanguage) || detectDefaultUiLanguage();
     if (typeof saved?.settingsOpen === "boolean") {
       appState.settingsOpen = saved.settingsOpen;
     }
@@ -379,13 +727,248 @@ function loadUiState() {
       appState.historyOpen = saved.historyOpen;
     }
   } catch {
+    appState.uiLanguage = detectDefaultUiLanguage();
     appState.settingsOpen = false;
     appState.historyOpen = false;
   }
 }
 
 function saveUiState() {
-  localStorage.setItem(UI_KEY, JSON.stringify({ settingsOpen: appState.settingsOpen, historyOpen: appState.historyOpen }));
+  localStorage.setItem(UI_KEY, JSON.stringify({ uiLanguage: appState.uiLanguage, settingsOpen: appState.settingsOpen, historyOpen: appState.historyOpen }));
+}
+
+function detectDefaultUiLanguage() {
+  const language = String(navigator.language || "").toLowerCase();
+  return language.startsWith("zh") ? UI_LANG_ZH_TW : UI_LANG_EN;
+}
+
+function normalizeUiLanguage(language) {
+  return language === UI_LANG_ZH_TW ? UI_LANG_ZH_TW : language === UI_LANG_EN ? UI_LANG_EN : "";
+}
+
+function t(key, vars = {}) {
+  const pack = I18N[appState.uiLanguage] || I18N[UI_LANG_EN];
+  let text = pack[key] ?? I18N[UI_LANG_EN][key] ?? key;
+  for (const [name, value] of Object.entries(vars)) {
+    text = text.replaceAll(`{${name}}`, String(value));
+  }
+  return text;
+}
+
+function setUiLanguage(language) {
+  const nextLanguage = normalizeUiLanguage(language) || UI_LANG_EN;
+  if (appState.uiLanguage === nextLanguage) return;
+  appState.uiLanguage = nextLanguage;
+  saveUiState();
+  renderStaticOptions();
+  hydrateProfile();
+  applyTranslations();
+  updateMicPermission(recorderState.permissionState);
+  resetLiveResultsForMode();
+  renderHistory().catch(() => {});
+}
+
+function applyTranslations() {
+  document.documentElement.lang = appState.uiLanguage;
+  document.title = t("appTitle");
+  document.body.dataset.uiLanguage = appState.uiLanguage;
+  elements.versionBadge.textContent = t("versionLabel", { version: APP_VERSION });
+  if (elements.lastUpdatedBadge) {
+    elements.lastUpdatedBadge.textContent = t("lastUpdatedLabel", { date: formatLastUpdatedDate() });
+  }
+  elements.heroEyebrow.textContent = t("heroEyebrow");
+  elements.heroTitle.textContent = t("appTitle");
+  elements.heroDescription.textContent = t("heroDescription");
+  elements.openHistoryFab.setAttribute("aria-label", t("openHistory"));
+  elements.openSettingsFab.setAttribute("aria-label", t("openSettings"));
+  document.querySelector(".settings-quick-switch")?.setAttribute("aria-label", t("quickProfileSwitch"));
+  document.querySelector(".mode-quick-switch")?.setAttribute("aria-label", t("quickModeSwitch"));
+  document.querySelector(".service-quick-switch")?.setAttribute("aria-label", t("quickCustomToggles"));
+  const customSpeechText = elements.quickCustomSpeechBtn?.querySelector(".service-quick-text");
+  const customTranslatorText = elements.quickCustomTranslatorBtn?.querySelector(".service-quick-text");
+  if (customSpeechText) customSpeechText.innerHTML = t("customSpeechShort");
+  if (customTranslatorText) customTranslatorText.innerHTML = t("customTranslatorShort");
+
+  if (elements.uiLanguageSelect) {
+    elements.uiLanguageSelect.value = appState.uiLanguage;
+  }
+
+  const headings = document.querySelectorAll(".section-head > h2");
+  if (headings[0]) headings[0].textContent = t("history");
+  if (headings[1]) headings[1].textContent = t("serviceSettings");
+  if (headings[2]) headings[2].textContent = t("liveTest");
+  if (headings[3]) headings[3].textContent = t("activityLog");
+
+  const trendTitle = document.querySelector(".history-trend-panel h3");
+  if (trendTitle) trendTitle.textContent = t("apiRespondTime");
+  const apiHistoryTitle = document.querySelector(".history-section-head h3");
+  if (apiHistoryTitle) apiHistoryTitle.textContent = t("apiCallHistory");
+
+  elements.toggleHistoryBtn.textContent = t("close");
+  elements.toggleSettingsBtn.textContent = t("close");
+  elements.clearHistoryBtn.textContent = t("clearAll");
+  elements.clearLogBtn.textContent = t("clear");
+  elements.enableMicBtn.textContent = t("enableMicrophone");
+  elements.runTextFlowBtn.textContent = t("translateAndSpeak");
+  elements.recordBtn.querySelector(".record-button-main").textContent = t("holdToRecord");
+  elements.textInputPanel.querySelector(".text-input-label span").textContent = t("sourceText");
+  elements.sourceTextInput.placeholder = t("sourceTextPlaceholder");
+
+  const resultTitles = document.querySelectorAll(".result-card h3");
+  if (resultTitles[0]) resultTitles[0].textContent = t("speechToText");
+  if (resultTitles[1]) resultTitles[1].textContent = t("translator");
+  if (resultTitles[2]) resultTitles[2].textContent = t("ttsAudio");
+
+  const perfLabels = document.querySelectorAll(".perf-label");
+  if (perfLabels[0]) perfLabels[0].textContent = t("sttShort");
+  if (perfLabels[1]) perfLabels[1].textContent = t("translation");
+  if (perfLabels[2]) perfLabels[2].textContent = t("ttsShort");
+  if (perfLabels[3]) perfLabels[3].textContent = t("total");
+
+  const modeTabs = document.querySelectorAll(".mode-quick-tab");
+  if (modeTabs[0]) modeTabs[0].textContent = t("fullMode");
+  if (modeTabs[1]) modeTabs[1].textContent = t("textMode");
+
+  const profileTabs = [...elements.profileTabs, ...elements.quickProfileTabs];
+  profileTabs.forEach((button, index) => {
+    if (!getActiveProfile()) return;
+    const profileId = button.dataset.profileId;
+    const profileName = appState.profiles[profileId]?.profileName || `${t("profileFallback")} ${index + 1}`;
+    button.textContent = profileName;
+  });
+
+  const viewButtons = document.querySelectorAll(".view-switcher-btn");
+  if (viewButtons[0]) viewButtons[0].textContent = t("total");
+  if (viewButtons[1]) viewButtons[1].textContent = t("sttShort");
+  if (viewButtons[2]) viewButtons[2].textContent = t("translation");
+  if (viewButtons[3]) viewButtons[3].textContent = t("ttsShort");
+
+  if (elements.sttMeta.textContent === "Waiting" || elements.sttMeta.textContent === "等待中") {
+    elements.sttMeta.textContent = t("waiting");
+  }
+  if (elements.translatorMeta.textContent === "Waiting" || elements.translatorMeta.textContent === "等待中") {
+    elements.translatorMeta.textContent = t("waiting");
+  }
+  if (elements.audioMeta.textContent === "Waiting" || elements.audioMeta.textContent === "等待中") {
+    elements.audioMeta.textContent = t("waiting");
+  }
+
+  if (elements.sttText.classList.contains("empty")) elements.sttText.textContent = t("transcriptPlaceholder");
+  if (elements.translatedText.classList.contains("empty")) elements.translatedText.textContent = t("translationPlaceholder");
+  if (elements.textModeStatusPill.classList.contains("idle")) elements.textModeStatusPill.textContent = t("ready");
+
+  const historyCopy = document.querySelector(".history-copy");
+  if (historyCopy) historyCopy.textContent = t("historyCopy");
+  const profileHelp = document.querySelector(".profile-panel .field-help");
+  if (profileHelp) profileHelp.textContent = t("profileHelp");
+  const profileNameLabel = document.querySelector('label[for="profile-name"], #profile-name')?.closest("label")?.querySelector("span");
+  if (profileNameLabel) profileNameLabel.textContent = t("profileName");
+  const languageLabel = document.querySelector("#ui-language-label");
+  if (languageLabel) languageLabel.textContent = t("displayLanguage");
+  const skinLabel = document.querySelector("#theme-select")?.closest("label")?.querySelector("span");
+  if (skinLabel) skinLabel.textContent = t("skin");
+
+  const profileTabList = document.querySelector(".profile-tabs");
+  if (profileTabList) profileTabList.setAttribute("aria-label", t("configurationProfiles"));
+
+  const legends = document.querySelectorAll("#settings-form fieldset > legend");
+  if (legends[0]) legends[0].textContent = t("speechToTextLegend");
+  if (legends[1]) legends[1].textContent = t("translatorLegend");
+  if (legends[2]) legends[2].textContent = t("textToSpeechLegend");
+
+  const profileNameInput = document.querySelector("#profile-name");
+  if (profileNameInput) profileNameInput.placeholder = t("profileUntitled");
+  if (elements.uiLanguageSelect?.options[0]) elements.uiLanguageSelect.options[0].textContent = "English";
+  if (elements.uiLanguageSelect?.options[1]) elements.uiLanguageSelect.options[1].textContent = "繁體中文";
+
+  setFieldLabelText('[name="sttEndpoint"]', t("sttEndpoint"));
+  setFieldLabelText('[name="speechKey"]', t("speechKey"));
+  setFieldLabelText('[name="sttLocalePreset"]', t("locale"));
+  setFieldHelpText('[name="sttLocalePreset"]', t("localeHelp"));
+  setFieldLabelText('[name="sttLocaleCustom"]', t("customLocale"));
+  setInputPlaceholder('[name="sttLocaleCustom"]', t("customLocalePlaceholder"));
+  setCheckboxText('[name="useCustomSpeech"]', t("useCustomSpeech"));
+  setFieldLabelText('[name="customSpeechEndpointId"]', t("customEndpointId"));
+  setInputPlaceholder('[name="customSpeechEndpointId"]', t("customEndpointPlaceholder"));
+  setFieldHelpText('[name="customSpeechEndpointId"]', t("customSpeechHelp"));
+
+  setFieldLabelText('[name="translatorEndpoint"]', t("translatorEndpoint"));
+  setFieldLabelText('[name="translatorKey"]', t("translatorKey"));
+  setFieldLabelText('[name="translatorRegionPreset"]', t("translatorRegion"));
+  setFieldHelpText('[name="translatorRegionPreset"]', t("translatorRegionHelp"));
+  setFieldLabelText('[name="translatorRegionCustom"]', t("customRegion"));
+  setInputPlaceholder('[name="translatorRegionCustom"]', t("customRegionPlaceholder"));
+  setCheckboxText('[name="useCustomTranslator"]', t("useCustomTranslator"));
+  setFieldLabelText('[name="translatorCategory"]', t("categoryId"));
+  setInputPlaceholder('[name="translatorCategory"]', t("translatorCategoryPlaceholder"));
+  setFieldHelpText('[name="translatorCategory"]', t("customTranslatorHelp"));
+  setFieldLabelText('[name="translatorFromPreset"]', t("from"));
+  setFieldHelpText('[name="translatorFromPreset"]', t("fromHelp"));
+  setFieldLabelText('[name="translatorToPreset"]', t("to"));
+  setFieldHelpText('[name="translatorToPreset"]', t("toHelp"));
+  setFieldLabelText('[name="translatorFromCustom"]', t("customFromCode"));
+  setFieldLabelText('[name="translatorToCustom"]', t("customToCode"));
+  setInputPlaceholder('[name="translatorFromCustom"]', t("customLanguagePlaceholder"));
+  setInputPlaceholder('[name="translatorToCustom"]', t("customLanguagePlaceholder"));
+
+  setFieldLabelText('[name="ttsEndpoint"]', t("ttsEndpoint"));
+  setFieldLabelText('[name="ttsKey"]', t("ttsKey"));
+  setFieldLabelText('[name="ttsLanguagePreset"]', t("voiceLocale"));
+  setFieldHelpText('[name="ttsLanguagePreset"]', t("voiceLocaleHelp"));
+  setFieldLabelText('[name="ttsVoicePreset"]', t("voiceName"));
+  setFieldHelpText('[name="ttsVoicePreset"]', t("voiceNameHelp"));
+  setFieldLabelText('[name="ttsLanguageCustom"]', t("customVoiceLocale"));
+  setInputPlaceholder('[name="ttsLanguageCustom"]', t("customVoiceLocalePlaceholder"));
+  setFieldLabelText('[name="ttsVoiceCustom"]', t("customVoiceName"));
+  setInputPlaceholder('[name="ttsVoiceCustom"]', t("customVoiceNamePlaceholder"));
+  setFieldLabelText('[name="ttsFormatPreset"]', t("outputFormat"));
+  setFieldLabelText('[name="ttsRate"]', t("rate"));
+  setFieldLabelText('[name="ttsFormatCustom"]', t("customOutputFormat"));
+  setInputPlaceholder('[name="ttsFormatCustom"]', t("customOutputFormatPlaceholder"));
+
+  const loadVoicesBtn = document.querySelector("#load-voices-btn");
+  if (loadVoicesBtn) loadVoicesBtn.textContent = t("loadVoices");
+
+  setDocLinkText("custom-speech-deploy-model", t("customSpeechDocs"));
+  setDocLinkText("language-support?tabs=stt-tts", t("speechLocaleDocs"), 0);
+  setDocLinkText("reference/v3-0-languages", t("translatorLanguageDocs"));
+  setDocLinkText("translator/translate?view=rest-translator-v3.0", t("translateApiDocs"));
+  setDocLinkText("rest-text-to-speech", t("ttsRestDocs"));
+  setDocLinkText("language-support?tabs=stt-tts", t("voiceAndLocaleDocs"), 1);
+
+  document.querySelectorAll(".password-toggle").forEach((button) => {
+    const targetName = button.dataset.target || "";
+    const input = elements.settingsForm.elements.namedItem(targetName);
+    const isPassword = input?.type === "password";
+    button.setAttribute("aria-label", `${isPassword ? t("show") : t("hide")} ${targetName}`);
+  });
+}
+
+function setFieldLabelText(selector, text) {
+  const label = document.querySelector(selector)?.closest("label")?.querySelector("span");
+  if (label) label.textContent = text;
+}
+
+function setFieldHelpText(selector, text) {
+  const help = document.querySelector(selector)?.closest("label")?.querySelector(".field-help");
+  if (help) help.textContent = text;
+}
+
+function setCheckboxText(selector, text) {
+  const checkboxLabel = document.querySelector(selector)?.closest("label")?.querySelector("span");
+  if (checkboxLabel) checkboxLabel.textContent = text;
+}
+
+function setInputPlaceholder(selector, text) {
+  const input = document.querySelector(selector);
+  if (input) input.placeholder = text;
+}
+
+function setDocLinkText(urlFragment, text, occurrence = 0) {
+  const matches = Array.from(document.querySelectorAll(".doc-link")).filter((link) => link.href.includes(urlFragment));
+  if (matches[occurrence]) {
+    matches[occurrence].textContent = text;
+  }
 }
 
 function getActiveProfile() {
@@ -398,7 +981,7 @@ function switchProfile(profileId) {
   saveProfiles();
   hydrateProfile();
   renderHistory().catch(() => {});
-  log(`Switched to ${getActiveProfile().profileName}.`);
+  log(t("switchedProfile", { name: getActiveProfile().profileName }));
 }
 
 function hydrateProfile() {
@@ -431,12 +1014,12 @@ function renderProfileTabs() {
   elements.profileTabs.forEach((button, index) => {
     const profileId = button.dataset.profileId;
     button.classList.toggle("active", profileId === appState.activeProfileId);
-    button.textContent = appState.profiles[profileId].profileName || `Profile ${index + 1}`;
+    button.textContent = appState.profiles[profileId].profileName || `${t("profileFallback")} ${index + 1}`;
   });
   elements.quickProfileTabs.forEach((button, index) => {
     const profileId = button.dataset.profileId;
     button.classList.toggle("active", profileId === appState.activeProfileId);
-    button.textContent = appState.profiles[profileId].profileName || `Profile ${index + 1}`;
+    button.textContent = appState.profiles[profileId].profileName || `${t("profileFallback")} ${index + 1}`;
   });
 }
 
@@ -521,15 +1104,15 @@ function toggleQuickServiceOption(fieldName) {
 
 function renderQuickServiceToggles() {
   elements.quickCustomSpeechBtn.classList.toggle("is-hidden", getCurrentMode() !== APP_MODE_FULL);
-  renderQuickServiceToggle(elements.quickCustomSpeechBtn, "useCustomSpeech", "Custom Speech");
-  renderQuickServiceToggle(elements.quickCustomTranslatorBtn, "useCustomTranslator", "Custom Translator");
+  renderQuickServiceToggle(elements.quickCustomSpeechBtn, "useCustomSpeech", t("useCustomSpeech"));
+  renderQuickServiceToggle(elements.quickCustomTranslatorBtn, "useCustomTranslator", t("useCustomTranslator"));
 }
 
 function renderQuickServiceToggle(button, fieldName, label) {
   const enabled = Boolean(getActiveProfile()[fieldName]);
   button.classList.toggle("is-on", enabled);
   button.setAttribute("aria-pressed", String(enabled));
-  button.setAttribute("aria-label", `${label}: ${enabled ? "On" : "Off"}`);
+  button.setAttribute("aria-label", `${label}: ${enabled ? t("ready") : t("idle")}`);
 }
 
 function collectProfileFromForm() {
@@ -540,7 +1123,7 @@ function collectProfileFromForm() {
     const ttsVoice = resolveCustomizableValue(data.get("ttsVoicePreset"), data.get("ttsVoiceCustom"));
     const ttsFormat = resolveCustomizableValue(data.get("ttsFormatPreset"), data.get("ttsFormatCustom"));
     return {
-      profileName: String(elements.profileName.value || "").trim() || "Untitled Profile",
+      profileName: String(elements.profileName.value || "").trim() || t("profileUntitled"),
     appMode: getCurrentMode(),
       theme: String(elements.themeSelect.value || "light").trim() || "light",
     sttEndpoint: sanitizeUrl(data.get("sttEndpoint")),
@@ -650,15 +1233,15 @@ function renderModeUi() {
 function resetLiveResultsForMode() {
   const isFullMode = getCurrentMode() === APP_MODE_FULL;
   if (!isFullMode) {
-    elements.sttMeta.textContent = "Hidden";
-    elements.sttText.textContent = "Speech-to-Text is disabled in Text Input Flow.";
+    elements.sttMeta.textContent = t("hidden");
+    elements.sttText.textContent = t("textInputFlowDisabledStt");
     elements.sttText.classList.remove("empty");
-    setStatus("idle", "Ready");
+    setStatus("idle", t("ready"), true);
     elements.textModeStatusPill.className = "status-pill idle";
-    elements.textModeStatusPill.textContent = "Ready";
+    elements.textModeStatusPill.textContent = t("ready");
   } else {
-    elements.sttMeta.textContent = "Waiting";
-    elements.sttText.textContent = "Transcript will appear here.";
+    elements.sttMeta.textContent = t("waiting");
+    elements.sttText.textContent = t("transcriptPlaceholder");
     elements.sttText.classList.add("empty");
   }
 }
@@ -671,8 +1254,8 @@ function togglePasswordField(button) {
   }
   const isHidden = input.type === "password";
   input.type = isHidden ? "text" : "password";
-  button.textContent = isHidden ? "🙉" : "🙈";
-  button.setAttribute("aria-label", `${isHidden ? "Hide" : "Show"} ${targetName}`);
+  button.textContent = isHidden ? "??" : "??";
+  button.setAttribute("aria-label", `${isHidden ? t("hide") : t("show")} ${targetName}`);
 }
 
 function toggleSettingsPanel() {
@@ -686,7 +1269,7 @@ function renderSettingsVisibility() {
   elements.settingsBackdrop.hidden = !appState.settingsOpen;
   elements.openSettingsFab.setAttribute("aria-expanded", String(appState.settingsOpen));
   elements.toggleSettingsBtn.setAttribute("aria-expanded", String(appState.settingsOpen));
-  elements.toggleSettingsBtn.textContent = "Close";
+  elements.toggleSettingsBtn.textContent = t("close");
 }
 
 function setSettingsOpen(nextOpen) {
@@ -712,7 +1295,7 @@ function renderHistoryVisibility() {
   elements.historyDrawer.setAttribute("aria-hidden", String(!appState.historyOpen));
   elements.openHistoryFab.setAttribute("aria-expanded", String(appState.historyOpen));
   elements.toggleHistoryBtn.setAttribute("aria-expanded", String(appState.historyOpen));
-  elements.toggleHistoryBtn.textContent = "Close";
+  elements.toggleHistoryBtn.textContent = t("close");
 }
 
 function applyTheme(themeName = getActiveProfile()?.theme || "light") {
@@ -731,14 +1314,14 @@ async function beginRecording() {
     recorderState.isPressing = false;
     recorderState.pendingPressStart = false;
     setStatus("error", "Missing Settings");
-    log(`Cannot start recording. Missing: ${missing.join(", ")}`);
+    log(t("cannotStartRecordingMissing", { items: missing.join(", ") }));
     return;
   }
   if (!navigator.mediaDevices?.getUserMedia) {
     recorderState.isPressing = false;
     recorderState.pendingPressStart = false;
     setStatus("error", "Mic Not Supported");
-    log("This browser does not support getUserMedia.");
+    log(t("browserNoGetUserMedia"));
     return;
   }
   try {
@@ -770,13 +1353,13 @@ async function beginRecording() {
       elements.recordBtn.classList.add("recording");
       elements.vuMeter.classList.add("is-recording");
       setStatus("processing", "Recording");
-      log("Recording started.");
+      log(t("recordingStarted"));
     } catch (error) {
       recorderState.isPressing = false;
       recorderState.pendingPressStart = false;
       await stopSpeechRecognition(true);
       setStatus("error", "Mic Error");
-      log(`Microphone access failed: ${formatError(error)}`);
+      log(t("microphoneAccessFailed", { error: formatError(error) }));
     }
   }
 
@@ -797,7 +1380,7 @@ async function finishRecording() {
   recorderState.pendingPressStart = false;
   recorderState.releaseStartedAt = performance.now();
   setStatus("processing", "Processing");
-  log("Recording stopped. Running STT, translation, and TTS.");
+  log(t("recordingStoppedProcessing"));
   recorderState.activeRecordingPromise = new Promise((resolve) => {
     recorderState.mediaRecorder.addEventListener("stop", async () => {
       try {
@@ -806,7 +1389,7 @@ async function finishRecording() {
         await processRecording(recordingBlob, transcript);
       } catch (error) {
         setStatus("error", "Failed");
-        log(`Pipeline failed: ${formatError(error)}`);
+        log(t("pipelineFailed", { error: formatError(error) }));
       } finally {
         cleanupRecorder();
         recorderState.activeRecordingPromise = null;
@@ -837,24 +1420,24 @@ async function initMicrophonePermissionState() {
 async function handleEnableMicrophone() {
   if (!navigator.mediaDevices?.getUserMedia) {
     setStatus("error", "Mic Not Supported");
-    log("This browser does not support getUserMedia.");
+    log(t("browserNoGetUserMedia"));
     return;
   }
   try {
     if (recorderState.permissionStream) {
       await ensureVuMeter();
       updateMicPermission("granted");
-      log("Microphone permission already granted.");
+    log(t("micAlreadyGranted"));
       return;
     }
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recorderState.permissionStream = stream;
     await ensureVuMeter();
     updateMicPermission("granted");
-    log("Microphone permission granted and ready.");
+    log(t("micGrantedReady"));
   } catch (error) {
     updateMicPermission("denied");
-    log(`Microphone permission request failed: ${formatError(error)}`);
+    log(t("micPermissionRequestFailed", { error: formatError(error) }));
   }
 }
 
@@ -902,7 +1485,7 @@ async function startSpeechRecognition(settings) {
 
   recognizer.canceled = (_sender, event) => {
     if (event.errorDetails) {
-      log(`STT canceled: ${event.errorDetails}`);
+      log(t("sttCanceled", { error: event.errorDetails }));
     }
   };
 
@@ -960,10 +1543,10 @@ function normalizeSpeechSdkEndpoint(endpoint) {
 function updateMicPermission(state) {
   recorderState.permissionState = state;
   const labels = {
-    granted: "Mic permission: granted",
-    denied: "Mic permission: denied",
-    prompt: "Mic permission: prompt",
-    unknown: "Mic permission: unknown",
+    granted: t("micPermissionGranted"),
+    denied: t("micPermissionDenied"),
+    prompt: t("micPermissionPrompt"),
+    unknown: t("micPermissionUnknown"),
   };
   const pillMode = state === "granted" ? "success" : state === "denied" ? "error" : "idle";
   elements.micPermissionPill.className = `status-pill ${pillMode}`;
@@ -983,21 +1566,21 @@ function updateMicGuidance(state) {
 
   if (state === "granted") {
     card.classList.add("mic-guidance-success");
-    elements.micGuidanceTitle.textContent = "Microphone is ready";
-    elements.micGuidanceText.textContent = "Permission has been granted. You can now use Hold To Record without re-enabling the microphone.";
+    elements.micGuidanceTitle.textContent = t("microphoneReady");
+    elements.micGuidanceText.textContent = t("microphoneReadyDesc");
     return;
   }
 
   if (state === "denied") {
     card.classList.add("mic-guidance-error");
-    elements.micGuidanceTitle.textContent = "Microphone access was denied";
-    elements.micGuidanceText.textContent = "Please reopen microphone access in your browser site settings, then click Enable Microphone again.";
+    elements.micGuidanceTitle.textContent = t("microphoneDenied");
+    elements.micGuidanceText.textContent = t("microphoneDeniedDesc");
     return;
   }
 
   card.classList.add("mic-guidance-idle");
-  elements.micGuidanceTitle.textContent = "Please enable microphone first";
-  elements.micGuidanceText.textContent = "Click Enable Microphone once before using Hold To Record.";
+  elements.micGuidanceTitle.textContent = t("pleaseEnableMic");
+  elements.micGuidanceText.textContent = t("pleaseEnableMicDesc");
 }
 
 async function ensureVuMeter() {
@@ -1126,7 +1709,7 @@ async function processRecording(audioBlob, transcript) {
 
   setResultText(elements.sttText, transcript);
   elements.sttMeta.textContent = detectedLocale || "Done";
-  log(`STT result: ${transcript}`);
+  log(t("sttResult", { text: transcript }));
   await runTranslationAndTtsFlow({
     settings,
     sourceText: transcript,
@@ -1149,7 +1732,7 @@ async function handleRunTextFlow() {
     elements.textModeStatusPill.className = "status-pill error";
     elements.textModeStatusPill.textContent = "Missing Settings";
     setStatus("error", "Missing Settings");
-    log(`Cannot start text flow. Missing: ${missing.join(", ")}`);
+    log(t("cannotStartTextFlowMissing", { items: missing.join(", ") }));
     return;
   }
 
@@ -1179,7 +1762,7 @@ async function handleRunTextFlow() {
     elements.textModeStatusPill.className = "status-pill error";
     elements.textModeStatusPill.textContent = "Failed";
     setStatus("error", "Failed");
-    log(`Pipeline failed: ${formatError(error)}`);
+    log(t("pipelineFailed", { error: formatError(error) }));
   }
 }
 
@@ -1209,7 +1792,7 @@ async function runTranslationAndTtsFlow({
   const translatedText = extractTranslation(translatorResponse);
   setResultText(elements.translatedText, translatedText);
   elements.translatorMeta.textContent = `${settings.translatorFrom || detectedLocale || sourceLabel} -> ${settings.translatorTo}`;
-  log(`Translation result: ${translatedText}`);
+  log(t("translationResult", { text: translatedText }));
 
   const ttsStartedAt = performance.now();
   const ttsAudioBlob = await synthesizeSpeech(translatedText, settings, apiCalls);
@@ -1217,7 +1800,7 @@ async function runTranslationAndTtsFlow({
   performanceStats.totalMs = performanceStats.sttMs + performanceStats.translationMs + performanceStats.ttsMs;
   setAudioPlayer(ttsAudioBlob);
   elements.audioMeta.textContent = settings.ttsVoice || settings.ttsLanguage || "Done";
-  log("TTS audio generated.");
+  log(t("ttsGenerated"));
   updatePerformanceSummary(performanceStats);
 
   if (sttApiCallIndex >= 0 && apiCalls[sttApiCallIndex]) {
@@ -1320,7 +1903,7 @@ function setApiCallDuration(apiCalls, service, method, durationMs) {
 async function handleLoadVoices() {
   const settings = getSettings();
   if (!settings.ttsEndpoint || !settings.ttsKey) {
-    log("TTS endpoint and key are required before loading voices.");
+    log(t("ttsEndpointKeyRequired"));
     return;
   }
   try {
@@ -1339,9 +1922,9 @@ async function handleLoadVoices() {
       renderVoiceOptions(resolveCustomizableValue(elements.ttsLanguagePreset.value, elements.ttsLanguageCustom.value));
       persistActiveProfileDraft();
     }
-    log(`Loaded ${Array.isArray(voices) ? voices.length : 0} voices.`);
+    log(t("loadedVoices", { count: Array.isArray(voices) ? voices.length : 0 }));
   } catch (error) {
-    log(`Failed to load voices: ${formatError(error)}`);
+    log(t("failedToLoadVoices", { error: formatError(error) }));
   }
 }
 
@@ -1354,7 +1937,7 @@ async function renderHistory() {
   if (entries.length === 0) {
     const empty = document.createElement("p");
     empty.className = "result-text empty";
-    empty.textContent = "No history yet.";
+    empty.textContent = t("noHistoryYet");
     elements.historyList.appendChild(empty);
     return;
   }
@@ -1385,15 +1968,23 @@ async function renderHistory() {
     const entryMode = entry.mode === APP_MODE_TEXT ? APP_MODE_TEXT : APP_MODE_FULL;
     const isTextModeView = getCurrentMode() === APP_MODE_TEXT;
 
-    title.textContent = `#${entry.sequence || 0}  ${entry.profileName || "Profile"}`;
+    title.textContent = `#${entry.sequence || 0}  ${entry.profileName || t("profileFallback")}`;
     subtitle.textContent = "";
     card.id = `history-seq-${entry.sequence || 0}`;
     time.textContent = formatDateTime(entry.createdAt);
-    stt.textContent = entry.transcript || "(empty)";
-    translation.textContent = entry.translatedText || "(empty)";
-    sourceLabel.textContent = entryMode === APP_MODE_TEXT ? "Input Text" : "STT";
+    stt.textContent = entry.transcript || "-";
+    translation.textContent = entry.translatedText || "-";
+    sourceLabel.textContent = entryMode === APP_MODE_TEXT ? t("inputText") : t("sttShort");
     sourceSection.classList.toggle("is-hidden", isTextModeView && entryMode === APP_MODE_FULL);
     performance.innerHTML = buildHistoryPerformanceMarkup(entry.performanceStats, entryMode);
+
+    const translationHeading = fragment.querySelector(".history-grid h4:last-of-type");
+    if (translationHeading) translationHeading.textContent = t("translation");
+    const recordingHeading = fragment.querySelector(".history-recording-audio h4");
+    if (recordingHeading) recordingHeading.textContent = t("recordedAudio");
+    const ttsHeading = fragment.querySelector(".history-audio-group > div:last-child h4");
+    if (ttsHeading) ttsHeading.textContent = t("ttsAudioLabel");
+    removeBtn.textContent = t("delete");
 
     if (Array.isArray(entry.apiCalls)) {
       entry.apiCalls.forEach((call) => {
@@ -1407,11 +1998,11 @@ async function renderHistory() {
         context.className = "api-call-context";
 
         if (call.service === "Speech-to-Text") {
-          context.textContent = [`Locale: ${entry.detectedLocale || "-"}`, `Audio: ${entry.audioMimeType || "-"}`].join(" | ");
+          context.textContent = [`${t("locale")}: ${entry.detectedLocale || "-"}`, `${t("audio")}: ${entry.audioMimeType || "-"}`].join(" | ");
         } else if (call.service === "Translator") {
-          context.textContent = [`From: ${entry.sourceLanguage || entry.detectedLocale || "-"}`, `To: ${entry.targetLanguage || "-"}`].join(" | ");
+          context.textContent = [`${t("from")}: ${entry.sourceLanguage || entry.detectedLocale || "-"}`, `${t("to")}: ${entry.targetLanguage || "-"}`].join(" | ");
         } else if (call.service === "Text-to-Speech") {
-          context.textContent = [`Voice: ${entry.ttsVoice || "-"}`, `Output: ${entry.ttsAudioMimeType || "-"}`].join(" | ");
+          context.textContent = [`${t("voice")}: ${entry.ttsVoice || "-"}`, `${t("output")}: ${entry.ttsAudioMimeType || "-"}`].join(" | ");
         }
 
         const url = document.createElement("p");
@@ -1427,7 +2018,7 @@ async function renderHistory() {
         if (typeof call.durationMs === "number") {
           const duration = document.createElement("p");
           duration.className = "api-call-duration";
-          duration.textContent = `Duration: ${formatMilliseconds(call.durationMs)}`;
+          duration.textContent = `${t("duration")}: ${formatMilliseconds(call.durationMs)}`;
           apiCard.append(duration, pre);
         } else {
           apiCard.appendChild(pre);
@@ -1454,7 +2045,7 @@ async function renderHistory() {
         appState.historyPage = totalPagesAfterDelete;
       }
       await renderHistory();
-      log("History item deleted.");
+      log(t("historyDeleted"));
     });
 
     elements.historyList.appendChild(fragment);
@@ -1467,7 +2058,7 @@ async function handleClearHistory() {
   appState.historyPage = 1;
   await clearHistoryEntries();
   await renderHistory();
-  log("History cleared.");
+  log(t("historyCleared"));
 }
 
 async function jumpToHistorySequence(targetSequence, logIfMissing = false) {
@@ -1476,7 +2067,7 @@ async function jumpToHistorySequence(targetSequence, logIfMissing = false) {
   const targetIndex = sortedDescending.findIndex((entry) => (entry.sequence || 0) === targetSequence);
   if (targetIndex === -1) {
     if (logIfMissing) {
-      log(`History sequence #${targetSequence} was not found.`);
+      log(t("historySequenceNotFound", { sequence: targetSequence }));
     }
     return false;
   }
@@ -1515,7 +2106,7 @@ function renderHistoryPaginationInto(container, totalPages) {
   const firstButton = document.createElement("button");
   firstButton.className = "ghost-button";
   firstButton.type = "button";
-  firstButton.textContent = "First";
+  firstButton.textContent = t("first");
   firstButton.disabled = appState.historyPage === 1;
   firstButton.addEventListener("click", async () => {
     if (appState.historyPage !== 1) {
@@ -1527,7 +2118,7 @@ function renderHistoryPaginationInto(container, totalPages) {
   const prevButton = document.createElement("button");
   prevButton.className = "ghost-button";
   prevButton.type = "button";
-  prevButton.textContent = "Previous";
+  prevButton.textContent = t("previous");
   prevButton.disabled = appState.historyPage === 1;
   prevButton.addEventListener("click", async () => {
     if (appState.historyPage > 1) {
@@ -1538,12 +2129,12 @@ function renderHistoryPaginationInto(container, totalPages) {
 
   const info = document.createElement("span");
   info.className = "history-page-info";
-  info.textContent = `Page ${appState.historyPage} / ${totalPages}`;
+  info.textContent = t("pageInfo", { current: appState.historyPage, total: totalPages });
 
   const nextButton = document.createElement("button");
   nextButton.className = "ghost-button";
   nextButton.type = "button";
-  nextButton.textContent = "Next";
+  nextButton.textContent = t("next");
   nextButton.disabled = appState.historyPage === totalPages;
   nextButton.addEventListener("click", async () => {
     if (appState.historyPage < totalPages) {
@@ -1555,9 +2146,25 @@ function renderHistoryPaginationInto(container, totalPages) {
   container.append(firstButton, prevButton, info, nextButton);
 }
 
-function setStatus(mode, text) {
+function setStatus(mode, text, isRaw = false) {
   elements.statusPill.className = `status-pill ${mode}`;
-  elements.statusPill.textContent = text;
+  elements.statusPill.textContent = isRaw ? text : translateStatusText(text);
+}
+
+function translateStatusText(text) {
+  const statusMap = {
+    Idle: "idle",
+    Ready: "ready",
+    Processing: "processing",
+    Complete: "complete",
+    Failed: "failed",
+    Recording: "recording",
+    "Missing Settings": "missingSettings",
+    "Mic Not Supported": "micNotSupported",
+    "Mic Error": "micError",
+  };
+  const key = statusMap[text];
+  return key ? t(key) : text;
 }
 
 function triggerHapticFeedback(duration = 10) {
@@ -1689,11 +2296,11 @@ function formatPerformanceSummary(stats = {}) {
 function buildHistoryPerformanceMarkup(stats = {}, mode = APP_MODE_FULL) {
   const items = [];
   if (mode === APP_MODE_FULL) {
-    items.push(`<span>STT: ${formatMilliseconds(stats.sttMs)}</span>`);
+    items.push(`<span>${t("sttShort")}: ${formatMilliseconds(stats.sttMs)}</span>`);
   }
-  items.push(`<span>Translation: ${formatMilliseconds(stats.translationMs)}</span>`);
-  items.push(`<span>TTS: ${formatMilliseconds(stats.ttsMs)}</span>`);
-  items.push(`<span class="history-performance-total">Total: ${formatMilliseconds(stats.totalMs)}</span>`);
+  items.push(`<span>${t("translation")}: ${formatMilliseconds(stats.translationMs)}</span>`);
+  items.push(`<span>${t("ttsShort")}: ${formatMilliseconds(stats.ttsMs)}</span>`);
+  items.push(`<span class="history-performance-total">${t("total")}: ${formatMilliseconds(stats.totalMs)}</span>`);
   return items.join(" | ");
 }
 
@@ -1703,10 +2310,10 @@ function renderPerformanceTrend(entries) {
   updatePerformanceViewButtons();
   const selectedView = appState.performanceView;
   const metricNameMap = {
-    total: "Total",
-    stt: "STT",
-    translation: "Translation",
-    tts: "TTS",
+    total: t("total"),
+    stt: t("sttShort"),
+    translation: t("translation"),
+    tts: t("ttsShort"),
   };
   if (!entries.length) {
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -1715,17 +2322,17 @@ function renderPerformanceTrend(entries) {
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("fill", "currentColor");
     text.setAttribute("opacity", "0.6");
-    text.textContent = "No performance samples yet";
+    text.textContent = t("noPerformanceSamples");
     svg.appendChild(text);
     return;
   }
 
   const sorted = [...entries].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
   const viewAriaLabels = {
-    total: "API response time trend",
-    stt: "STT response time trend",
-    translation: "Translation response time trend",
-    tts: "TTS response time trend",
+    total: `${t("apiRespondTime")} - ${t("total")}`,
+    stt: `${t("apiRespondTime")} - ${t("sttShort")}`,
+    translation: `${t("apiRespondTime")} - ${t("translation")}`,
+    tts: `${t("apiRespondTime")} - ${t("ttsShort")}`,
   };
   svg.setAttribute("aria-label", viewAriaLabels[selectedView] || viewAriaLabels.total);
   const metricValues = sorted.map((entry) => getPerformanceMetric(entry.performanceStats, selectedView));
@@ -1845,7 +2452,7 @@ function renderPerformanceTrend(entries) {
   oldestLabel.setAttribute("text-anchor", "start");
   oldestLabel.setAttribute("fill", axisColor);
   oldestLabel.setAttribute("opacity", "0.58");
-  oldestLabel.textContent = "Oldest";
+  oldestLabel.textContent = t("oldest");
   svg.appendChild(oldestLabel);
 
   const latestLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -1855,7 +2462,7 @@ function renderPerformanceTrend(entries) {
   latestLabel.setAttribute("text-anchor", "end");
   latestLabel.setAttribute("fill", axisColor);
   latestLabel.setAttribute("opacity", "0.58");
-  latestLabel.textContent = "Latest";
+  latestLabel.textContent = t("latest");
   svg.appendChild(latestLabel);
 }
 
@@ -1893,7 +2500,7 @@ function setAudioPlayer(audioBlob) {
   elements.ttsPlayer.src = recorderState.activeAudioUrl;
   elements.ttsPlayer.load();
   elements.ttsPlayer.play().catch(() => {
-    log("Autoplay blocked by browser. Use the audio controls to play.");
+    log(t("autoplayBlocked"));
   });
 }
 
@@ -1909,34 +2516,34 @@ function cleanupRecorder() {
 
 function validateBeforeRecording(settings) {
   const missing = [];
-  if (!settings.sttEndpoint) missing.push("STT Endpoint");
-  if (!settings.speechKey) missing.push("Speech Key");
-  if (!settings.sttLocale) missing.push("STT Locale");
-  if (settings.useCustomSpeech && !settings.customSpeechEndpointId) missing.push("Custom Speech Endpoint ID");
-  if (!settings.translatorEndpoint) missing.push("Translator Endpoint");
-  if (!settings.translatorKey) missing.push("Translator Key");
-  if (!settings.translatorFrom) missing.push("Translator From");
-  if (!settings.translatorTo) missing.push("Translator To");
-  if (!settings.ttsEndpoint) missing.push("TTS Endpoint");
-  if (!settings.ttsKey) missing.push("TTS Key");
-  if (!settings.ttsLanguage) missing.push("TTS Voice Locale");
-  if (!settings.ttsVoice) missing.push("TTS Voice");
-  if (!settings.ttsFormat) missing.push("TTS Output Format");
+  if (!settings.sttEndpoint) missing.push(t("sttEndpoint"));
+  if (!settings.speechKey) missing.push(t("speechKey"));
+  if (!settings.sttLocale) missing.push(t("locale"));
+  if (settings.useCustomSpeech && !settings.customSpeechEndpointId) missing.push(t("customEndpointId"));
+  if (!settings.translatorEndpoint) missing.push(t("translatorEndpoint"));
+  if (!settings.translatorKey) missing.push(t("translatorKey"));
+  if (!settings.translatorFrom) missing.push(t("from"));
+  if (!settings.translatorTo) missing.push(t("to"));
+  if (!settings.ttsEndpoint) missing.push(t("ttsEndpoint"));
+  if (!settings.ttsKey) missing.push(t("ttsKey"));
+  if (!settings.ttsLanguage) missing.push(t("voiceLocale"));
+  if (!settings.ttsVoice) missing.push(t("voiceName"));
+  if (!settings.ttsFormat) missing.push(t("outputFormat"));
   return missing;
 }
 
 function validateBeforeTextFlow(settings, sourceText) {
   const missing = [];
-  if (!sourceText) missing.push("Source Text");
-  if (!settings.translatorEndpoint) missing.push("Translator Endpoint");
-  if (!settings.translatorKey) missing.push("Translator Key");
-  if (!settings.translatorFrom) missing.push("Translator From");
-  if (!settings.translatorTo) missing.push("Translator To");
-  if (!settings.ttsEndpoint) missing.push("TTS Endpoint");
-  if (!settings.ttsKey) missing.push("TTS Key");
-  if (!settings.ttsLanguage) missing.push("TTS Voice Locale");
-  if (!settings.ttsVoice) missing.push("TTS Voice");
-  if (!settings.ttsFormat) missing.push("TTS Output Format");
+  if (!sourceText) missing.push(t("sourceText"));
+  if (!settings.translatorEndpoint) missing.push(t("translatorEndpoint"));
+  if (!settings.translatorKey) missing.push(t("translatorKey"));
+  if (!settings.translatorFrom) missing.push(t("from"));
+  if (!settings.translatorTo) missing.push(t("to"));
+  if (!settings.ttsEndpoint) missing.push(t("ttsEndpoint"));
+  if (!settings.ttsKey) missing.push(t("ttsKey"));
+  if (!settings.ttsLanguage) missing.push(t("voiceLocale"));
+  if (!settings.ttsVoice) missing.push(t("voiceName"));
+  if (!settings.ttsFormat) missing.push(t("outputFormat"));
   return missing;
 }
 
@@ -2065,7 +2672,7 @@ function populateSelect(select, options) {
 function populateSelectWithCustom(select, options) {
   const withCustom = [...options];
   if (!withCustom.some((option) => option.value === CUSTOM_OPTION)) {
-    withCustom.push({ value: CUSTOM_OPTION, label: "Custom" });
+    withCustom.push({ value: CUSTOM_OPTION, label: t("custom") });
   }
   populateSelect(select, withCustom);
 }
@@ -2084,7 +2691,7 @@ function normalizePresetAndCustom(value, options) {
 function log(message) {
   const line = document.createElement("div");
   line.className = "log-line";
-  line.textContent = `[${new Date().toLocaleTimeString("en-US", { hour12: false })}] ${message}`;
+  line.textContent = `[${new Date().toLocaleTimeString(getUiLocaleTag(), { hour12: false })}] ${message}`;
   elements.logOutput.prepend(line);
   while (elements.logOutput.childElementCount > MAX_LOG_LINES) {
     elements.logOutput.removeChild(elements.logOutput.lastChild);
@@ -2105,9 +2712,28 @@ function stripTrailingSlash(value) {
 
 function formatDateTime(value) {
   try {
-    return new Date(value).toLocaleString();
+    return new Date(value).toLocaleString(getUiLocaleTag());
   } catch {
     return String(value);
+  }
+}
+
+function getUiLocaleTag() {
+  return appState.uiLanguage === UI_LANG_ZH_TW ? "zh-TW" : "en-US";
+}
+
+function formatLastUpdatedDate() {
+  try {
+    return new Date(APP_LAST_UPDATED_AT).toLocaleString(getUiLocaleTag(), {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  } catch {
+    return APP_LAST_UPDATED_AT;
   }
 }
 
@@ -2209,3 +2835,4 @@ async function deleteHistoryEntry(id) {
 async function clearHistoryEntries() {
   return withStore("readwrite", (store) => store.clear());
 }
+
